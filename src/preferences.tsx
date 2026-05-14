@@ -29,13 +29,13 @@ export default function Preferences() {
     const [showDockBadge, setShowDockBadge] = useState(true);
     const [launchAtStartup, setLaunchAtStartup] = useState(false);
     const [crashReporting, setCrashReporting] = useState(false);
-    const [crashReportingAvailable, setCrashReportingAvailable] = useState(true);
+    const [crashReportingAvailable, setCrashReportingAvailable] =
+        useState(true);
     const [store, setStore] = useState<Store | null>(null);
     const [loaded, setLoaded] = useState(false);
-
-    // Initial crashReporting from disk; used to show the "restart" hint
-    // only after the user actually changes it from the loaded value.
-    const initialCrashReporting = useRef<boolean | null>(null);
+    const [initialCrashReporting, setInitialCrashReporting] = useState<
+        boolean | null
+    >(null);
 
     useEffect(() => {
         invoke<boolean>("crash_reporting_available")
@@ -44,7 +44,7 @@ export default function Preferences() {
     }, []);
 
     useEffect(() => {
-        (async () => {
+        void (async () => {
             try {
                 const s = await Store.load("preferences.json");
                 setStore(s);
@@ -53,11 +53,15 @@ export default function Preferences() {
                     await s.save();
                 }
                 setTheme((await s.get<Theme>("theme")) ?? "system");
-                setShowDockBadge((await s.get<boolean>("showDockBadge")) ?? true);
-                setLaunchAtStartup((await s.get<boolean>("launchAtStartup")) ?? false);
+                setShowDockBadge(
+                    (await s.get<boolean>("showDockBadge")) ?? true,
+                );
+                setLaunchAtStartup(
+                    (await s.get<boolean>("launchAtStartup")) ?? false,
+                );
                 const cr = (await s.get<boolean>("crashReporting")) ?? false;
                 setCrashReporting(cr);
-                initialCrashReporting.current = cr;
+                setInitialCrashReporting(cr);
             } catch (e) {
                 console.error("Failed to load preferences, using defaults:", e);
             } finally {
@@ -92,25 +96,49 @@ export default function Preferences() {
     const lastPersisted = useRef<Prefs | null>(null);
     useEffect(() => {
         if (!loaded || !store) return;
-        const current: Prefs = { theme, showDockBadge, launchAtStartup, crashReporting };
+        const current: Prefs = {
+            theme,
+            showDockBadge,
+            launchAtStartup,
+            crashReporting,
+        };
         const prev = lastPersisted.current;
         if (!prev) {
             lastPersisted.current = current;
             return;
         }
 
-        const changes: Array<{ key: keyof Prefs; value: unknown; event?: string }> = [];
+        const changes: Array<{
+            key: keyof Prefs;
+            value: unknown;
+            event?: string;
+        }> = [];
         if (prev.theme !== current.theme) {
-            changes.push({ key: "theme", value: current.theme, event: "theme-changed" });
+            changes.push({
+                key: "theme",
+                value: current.theme,
+                event: "theme-changed",
+            });
         }
         if (prev.showDockBadge !== current.showDockBadge) {
-            changes.push({ key: "showDockBadge", value: current.showDockBadge, event: "badge-pref-changed" });
+            changes.push({
+                key: "showDockBadge",
+                value: current.showDockBadge,
+                event: "badge-pref-changed",
+            });
         }
         if (prev.launchAtStartup !== current.launchAtStartup) {
-            changes.push({ key: "launchAtStartup", value: current.launchAtStartup, event: "launch-at-startup-changed" });
+            changes.push({
+                key: "launchAtStartup",
+                value: current.launchAtStartup,
+                event: "launch-at-startup-changed",
+            });
         }
         if (prev.crashReporting !== current.crashReporting) {
-            changes.push({ key: "crashReporting", value: current.crashReporting });
+            changes.push({
+                key: "crashReporting",
+                value: current.crashReporting,
+            });
         }
         if (changes.length === 0) return;
 
@@ -128,7 +156,8 @@ export default function Preferences() {
         })();
     }, [theme, showDockBadge, launchAtStartup, crashReporting, loaded, store]);
 
-    const activeLabel = TABS.find((t) => t.id === activeTab)?.label ?? "Preferences";
+    const activeLabel =
+        TABS.find((t) => t.id === activeTab)?.label ?? "Preferences";
 
     useEffect(() => {
         document.title = activeLabel;
@@ -145,14 +174,17 @@ export default function Preferences() {
                             <button
                                 key={id}
                                 type="button"
-                                className={`flex w-22 flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${active
-                                    ? "bg-neutral-200/60 dark:bg-neutral-700/60"
-                                    : "hover:bg-neutral-200/40 dark:hover:bg-neutral-700/40"
-                                    }`}
+                                className={`flex w-22 flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
+                                    active
+                                        ? "bg-neutral-200/60 dark:bg-neutral-700/60"
+                                        : "hover:bg-neutral-200/40 dark:hover:bg-neutral-700/40"
+                                }`}
                                 onClick={() => setActiveTab(id)}
                             >
                                 <Icon className="h-6 w-6" />
-                                <span className="text-[11px] leading-none">{label}</span>
+                                <span className="text-[11px] leading-none">
+                                    {label}
+                                </span>
                             </button>
                         );
                     })}
@@ -167,7 +199,9 @@ export default function Preferences() {
                                 <span>Theme</span>
                                 <select
                                     value={theme}
-                                    onChange={(e) => setTheme(e.target.value as Theme)}
+                                    onChange={(e) =>
+                                        setTheme(e.target.value as Theme)
+                                    }
                                     className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
                                 >
                                     <option value="system">System</option>
@@ -182,7 +216,9 @@ export default function Preferences() {
                                 <input
                                     type="checkbox"
                                     checked={showDockBadge}
-                                    onChange={(e) => setShowDockBadge(e.target.checked)}
+                                    onChange={(e) =>
+                                        setShowDockBadge(e.target.checked)
+                                    }
                                     className="h-4 w-4 accent-blue-600"
                                 />
                                 <span>Show unread count in Dock icon</span>
@@ -194,13 +230,16 @@ export default function Preferences() {
                                 <input
                                     type="checkbox"
                                     checked={launchAtStartup}
-                                    onChange={(e) => setLaunchAtStartup(e.target.checked)}
+                                    onChange={(e) =>
+                                        setLaunchAtStartup(e.target.checked)
+                                    }
                                     className="h-4 w-4 accent-blue-600"
                                 />
                                 <span>Launch Owlbox at login</span>
                             </label>
                             <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                                Owlbox opens automatically when you log in to your Mac.
+                                Owlbox opens automatically when you log in to
+                                your Mac.
                             </p>
                         </div>
                     </>
@@ -211,22 +250,32 @@ export default function Preferences() {
                         <label className="flex items-center gap-2.5">
                             <input
                                 type="checkbox"
-                                checked={crashReporting && crashReportingAvailable}
-                                onChange={(e) => setCrashReporting(e.target.checked)}
+                                checked={
+                                    crashReporting && crashReportingAvailable
+                                }
+                                onChange={(e) =>
+                                    setCrashReporting(e.target.checked)
+                                }
                                 disabled={!crashReportingAvailable}
                                 className="h-4 w-4 accent-blue-600 disabled:opacity-50"
                             />
-                            <span className={!crashReportingAvailable ? "text-neutral-500" : ""}>
+                            <span
+                                className={
+                                    !crashReportingAvailable
+                                        ? "text-neutral-500"
+                                        : ""
+                                }
+                            >
                                 Share anonymous crash reports
                             </span>
                         </label>
                         <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
                             {!crashReportingAvailable
                                 ? "Not available in this build."
-                                : initialCrashReporting.current !== null
-                                    && initialCrashReporting.current !== crashReporting
-                                    ? "Takes effect after restart."
-                                    : "Helps catch bugs. No email content is ever sent. Off by default."}
+                                : initialCrashReporting !== null &&
+                                    initialCrashReporting !== crashReporting
+                                  ? "Takes effect after restart."
+                                  : "Helps catch bugs. No email content is ever sent. Off by default."}
                         </p>
                     </div>
                 )}

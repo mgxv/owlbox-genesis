@@ -26,9 +26,7 @@
     "plugins": {
         "deep-link": {
             "desktop": {
-                "schemes": [
-                    "mailto"
-                ]
+                "schemes": ["mailto"]
             }
         }
     }

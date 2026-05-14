@@ -36,6 +36,41 @@ pnpm install
 pnpm tauri dev
 ```
 
+## Verify
+
+CI runs every check below on each PR. Run them locally first to catch issues before pushing.
+
+Frontend (from repo root):
+
+```bash
+pnpm lint
+pnpm format:check
+pnpm exec tsc --noEmit
+pnpm test
+pnpm build
+```
+
+`pnpm format` auto-applies Prettier.
+
+Rust (from `src-tauri/`):
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features --locked -- -D warnings
+cargo test --locked
+cargo audit
+```
+
+`cargo fmt --all` auto-applies rustfmt.
+
+Other:
+
+```bash
+bash .github/scripts/check-audit-expirations.sh
+```
+
+A full bundle build (`pnpm tauri build`) takes 5–15 minutes and isn't strictly required before pushing, but it's the fastest way to catch release-only issues like LTO link failures.
+
 ## Build a release
 
 ```bash
@@ -59,11 +94,11 @@ src/         React app for the preferences window only (main window is Gmail)
 
 ## Preferences
 
-| Key | Type | Default |
-|---|---|---|
-| `theme` | `"light" \| "dark" \| "system"` | `"system"` |
-| `showDockBadge` | bool | `true` |
-| `launchAtStartup` | bool | `false` |
-| `crashReporting` | bool | `false` |
+| Key               | Type                            | Default    |
+| ----------------- | ------------------------------- | ---------- |
+| `theme`           | `"light" \| "dark" \| "system"` | `"system"` |
+| `showDockBadge`   | bool                            | `true`     |
+| `launchAtStartup` | bool                            | `false`    |
+| `crashReporting`  | bool                            | `false`    |
 
 Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.

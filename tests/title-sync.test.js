@@ -6,7 +6,10 @@ import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SHARED = readFileSync(join(here, "../injected/shared.js"), "utf-8");
-const TITLE_SYNC = readFileSync(join(here, "../injected/title-sync.js"), "utf-8");
+const TITLE_SYNC = readFileSync(
+    join(here, "../injected/title-sync.js"),
+    "utf-8",
+);
 
 // `runScripts: 'outside-only'` is required for win.eval to bind `window`
 // inside the IIFEs; without it the injected scripts silently no-op.
@@ -34,7 +37,9 @@ async function setup({ title = "", path = "/mail/u/0/", hash = "" } = {}) {
     // jsdom starts in readyState=loading, so onReady defers tick() until DCL.
     if (win.document.readyState === "loading") {
         await new Promise((resolve) => {
-            win.document.addEventListener("DOMContentLoaded", resolve, { once: true });
+            win.document.addEventListener("DOMContentLoaded", resolve, {
+                once: true,
+            });
         });
     }
     await new Promise((r) => setTimeout(r, 0));
@@ -65,7 +70,10 @@ describe("title-sync: initial tick on load", () => {
             title: "Inbox (1,234) - alice@example.com - Gmail",
             hash: "#inbox",
         });
-        expect(emitted).toContainEqual({ event: "unread-count", payload: 1234 });
+        expect(emitted).toContainEqual({
+            event: "unread-count",
+            payload: 1234,
+        });
     });
 
     it("emits account-email extracted from title", async () => {
@@ -216,7 +224,9 @@ describe("title-sync: title-format-unknown diagnostic", () => {
             title: "Inbox (5) - a@b.com - Gmail",
             hash: "#inbox",
         });
-        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(false);
+        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(
+            false,
+        );
     });
 
     it("does not fire for parens-less inbox titles with no extra digits", async () => {
@@ -224,7 +234,9 @@ describe("title-sync: title-format-unknown diagnostic", () => {
             title: "Inbox - a@b.com - Gmail",
             hash: "#inbox",
         });
-        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(false);
+        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(
+            false,
+        );
     });
 
     it("fires when title has digits but no (N) match on inbox view", async () => {
@@ -268,6 +280,8 @@ describe("title-sync: title-format-unknown diagnostic", () => {
             title: "Some Thread [7] - a@b.com - Gmail",
             hash: "#inbox/FMfcgz123",
         });
-        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(false);
+        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(
+            false,
+        );
     });
 });
