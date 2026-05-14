@@ -1,0 +1,16 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "default",
+    "description": "Capability for the main window",
+    "windows": [
+        "main",
+        "preferences"
+    ],
+    "permissions": [
+        "core:event:default",
+        "core:resources:default",
+        "core:window:allow-set-title",
+        "deep-link:default",
+        "store:default"
+    ]
+}

@@ -1,0 +1,63 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+*.icloud
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.npm
+.eslintcache
+*.tsbuildinfo
+
+# Vite build output and caches
+dist/
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Editors / IDEs
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+.history/
+.ionide/
+*.swp
+*.swo
+
+# Rust / Tauri (also covered in src-tauri/.gitignore — kept here for safety)
+target/
+src-tauri/target/
+src-tauri/gen/schemas/
+**/*.rs.bk
+
+# Sentry
+.sentryclirc

@@ -1,0 +1,16 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "gmail",
+    "description": "Permissions granted to Gmail pages loaded in the main webview — allow the injected script to emit events to Rust.",
+    "windows": [
+        "main"
+    ],
+    "remote": {
+        "urls": [
+            "https://mail.google.com/*"
+        ]
+    },
+    "permissions": [
+        "core:event:allow-emit"
+    ]
+}
