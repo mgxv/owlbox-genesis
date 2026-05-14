@@ -37,7 +37,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_deep_link::init())
-        .on_menu_event(|app, event| shortcuts::handle_menu_event(app, event))
+        .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {
             let handle = app.handle().clone();
 
