@@ -29,7 +29,10 @@
         // Gmail probably changed the count format — flag once for diagnosis.
         if (!warnedFormat && /\d/.test(title.replace(owl.EMAIL_RE, ""))) {
             warnedFormat = true;
-            owl.emit("title-format-unknown", title.replace(owl.EMAIL_RE, "<email>"));
+            owl.emit(
+                "title-format-unknown",
+                title.replace(owl.EMAIL_RE, "<email>"),
+            );
         }
         return 0;
     }
