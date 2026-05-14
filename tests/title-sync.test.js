@@ -209,3 +209,65 @@ describe("title-sync: defensive parsing", () => {
         expect(email).toEqual([]);
     });
 });
+
+describe("title-sync: title-format-unknown diagnostic", () => {
+    it("does not fire for normal (N) titles", async () => {
+        const { emitted } = await setup({
+            title: "Inbox (5) - a@b.com - Gmail",
+            hash: "#inbox",
+        });
+        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(false);
+    });
+
+    it("does not fire for parens-less inbox titles with no extra digits", async () => {
+        const { emitted } = await setup({
+            title: "Inbox - a@b.com - Gmail",
+            hash: "#inbox",
+        });
+        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(false);
+    });
+
+    it("fires when title has digits but no (N) match on inbox view", async () => {
+        const { emitted } = await setup({
+            title: "Inbox [7] - a@b.com - Gmail",
+            hash: "#inbox",
+        });
+        expect(emitted).toContainEqual({
+            event: "title-format-unknown",
+            payload: "Inbox [7] - <email> - Gmail",
+        });
+    });
+
+    it("scrubs the account email from the diagnostic payload", async () => {
+        const { emitted } = await setup({
+            title: "Bandeja de entrada [3] - alice@example.com - Gmail",
+            hash: "#inbox",
+        });
+        const diag = emitted.find((e) => e.event === "title-format-unknown");
+        expect(diag).toBeDefined();
+        expect(diag.payload).not.toContain("alice@example.com");
+        expect(diag.payload).toContain("<email>");
+    });
+
+    it("fires at most once per session even on repeated title changes", async () => {
+        const { win, emitted } = await setup({
+            title: "Inbox [7] - a@b.com - Gmail",
+            hash: "#inbox",
+        });
+        win.document.title = "Inbox [8] - a@b.com - Gmail";
+        await flush();
+        win.document.title = "Inbox [9] - a@b.com - Gmail";
+        await flush();
+
+        const diag = emitted.filter((e) => e.event === "title-format-unknown");
+        expect(diag).toHaveLength(1);
+    });
+
+    it("does not fire on a thread view even with unparseable digits", async () => {
+        const { emitted } = await setup({
+            title: "Some Thread [7] - a@b.com - Gmail",
+            hash: "#inbox/FMfcgz123",
+        });
+        expect(emitted.some((e) => e.event === "title-format-unknown")).toBe(false);
+    });
+});
