@@ -14,6 +14,7 @@ mod settings;
 mod shortcuts;
 mod theme;
 mod title;
+mod updater;
 mod webview;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -54,6 +55,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             build_info::crash_reporting_available
         ])
@@ -78,6 +80,7 @@ pub fn run() -> anyhow::Result<()> {
             preferences::build_hidden(&handle)?;
             theme::apply(&handle);
             autostart::apply(&handle);
+            updater::check_in_background(&handle);
 
             let compose_handle = handle.clone();
             app.deep_link().on_open_url(move |event| {

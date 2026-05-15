@@ -3,6 +3,7 @@ import { Store } from "@tauri-apps/plugin-store";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { check, type Update } from "@tauri-apps/plugin-updater";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
     Cog6ToothIcon,
@@ -34,6 +35,48 @@ export default function Preferences() {
         useState(true);
     const [store, setStore] = useState<Store | null>(null);
     const [loaded, setLoaded] = useState(false);
+    const [updateStatus, setUpdateStatus] = useState<
+        | "idle"
+        | "checking"
+        | "up-to-date"
+        | "available"
+        | "installing"
+        | "error"
+    >("idle");
+    const [updateMessage, setUpdateMessage] = useState("");
+    const pendingUpdate = useRef<Update | null>(null);
+
+    async function checkForUpdates() {
+        setUpdateStatus("checking");
+        setUpdateMessage("");
+        try {
+            const update = await check();
+            pendingUpdate.current = update;
+            if (update) {
+                setUpdateStatus("available");
+                setUpdateMessage(`Update available: v${update.version}`);
+            } else {
+                setUpdateStatus("up-to-date");
+                setUpdateMessage("You're on the latest version.");
+            }
+        } catch (e) {
+            setUpdateStatus("error");
+            setUpdateMessage(String(e));
+        }
+    }
+
+    async function installUpdate() {
+        if (!pendingUpdate.current) return;
+        setUpdateStatus("installing");
+        setUpdateMessage("Downloading…");
+        try {
+            await pendingUpdate.current.downloadAndInstall();
+            await relaunch();
+        } catch (e) {
+            setUpdateStatus("error");
+            setUpdateMessage(String(e));
+        }
+    }
 
     useEffect(() => {
         invoke<boolean>("crash_reporting_available")
@@ -172,7 +215,7 @@ export default function Preferences() {
                             <button
                                 key={id}
                                 type="button"
-                                className={`flex w-22 cursor-pointer flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
+                                className={`flex w-22 flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
                                     active
                                         ? "bg-neutral-200/60 dark:bg-neutral-700/60"
                                         : "hover:bg-neutral-200/40 dark:hover:bg-neutral-700/40"
@@ -191,56 +234,95 @@ export default function Preferences() {
 
             <section className="flex-1 overflow-auto px-6 py-5 space-y-4">
                 {activeTab === "general" && (
-                    <>
-                        <div>
-                            <label className="flex items-center gap-2.5">
-                                <span>Theme</span>
-                                <select
-                                    value={theme}
-                                    onChange={(e) =>
-                                        setTheme(e.target.value as Theme)
-                                    }
-                                    className="cursor-pointer rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                    <div className="flex h-full flex-col">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="flex items-center gap-2.5">
+                                    <span>Theme</span>
+                                    <select
+                                        value={theme}
+                                        onChange={(e) =>
+                                            setTheme(e.target.value as Theme)
+                                        }
+                                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                    >
+                                        <option value="system">System</option>
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={showDockBadge}
+                                        onChange={(e) =>
+                                            setShowDockBadge(e.target.checked)
+                                        }
+                                        className="h-4 w-4 accent-blue-600"
+                                    />
+                                    <span>Show unread count in Dock icon</span>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={launchAtStartup}
+                                        onChange={(e) =>
+                                            setLaunchAtStartup(e.target.checked)
+                                        }
+                                        className="h-4 w-4 accent-blue-600"
+                                    />
+                                    <span>Launch Owlbox at login</span>
+                                </label>
+                                <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                                    Owlbox opens automatically when you log in
+                                    to your Mac.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="mt-auto flex flex-col items-center gap-1 pt-4">
+                            {updateMessage && (
+                                <p
+                                    className={`text-[11px] ${
+                                        updateStatus === "error"
+                                            ? "text-red-600 dark:text-red-400"
+                                            : "text-neutral-500 dark:text-neutral-400"
+                                    }`}
                                 >
-                                    <option value="system">System</option>
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
-                            </label>
-                        </div>
-
-                        <div>
-                            <label className="flex items-center gap-2.5">
-                                <input
-                                    type="checkbox"
-                                    checked={showDockBadge}
-                                    onChange={(e) =>
-                                        setShowDockBadge(e.target.checked)
+                                    {updateMessage}
+                                </p>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (updateStatus === "available") {
+                                        void installUpdate();
+                                    } else {
+                                        void checkForUpdates();
                                     }
-                                    className="h-4 w-4 cursor-pointer accent-blue-600"
-                                />
-                                <span>Show unread count in Dock icon</span>
-                            </label>
+                                }}
+                                disabled={
+                                    updateStatus === "checking" ||
+                                    updateStatus === "installing"
+                                }
+                                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                            >
+                                {updateStatus === "checking" && "Checking…"}
+                                {updateStatus === "installing" && "Installing…"}
+                                {updateStatus === "available" &&
+                                    "Install update"}
+                                {(updateStatus === "idle" ||
+                                    updateStatus === "up-to-date" ||
+                                    updateStatus === "error") &&
+                                    "Check for updates"}
+                            </button>
                         </div>
-
-                        <div>
-                            <label className="flex items-center gap-2.5">
-                                <input
-                                    type="checkbox"
-                                    checked={launchAtStartup}
-                                    onChange={(e) =>
-                                        setLaunchAtStartup(e.target.checked)
-                                    }
-                                    className="h-4 w-4 cursor-pointer accent-blue-600"
-                                />
-                                <span>Launch Owlbox at login</span>
-                            </label>
-                            <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                                Owlbox opens automatically when you log in to
-                                your Mac.
-                            </p>
-                        </div>
-                    </>
+                    </div>
                 )}
 
                 {activeTab === "advanced" && (
@@ -257,7 +339,7 @@ export default function Preferences() {
                                         setCrashReporting(e.target.checked)
                                     }
                                     disabled={!crashReportingAvailable}
-                                    className="h-4 w-4 cursor-pointer accent-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="h-4 w-4 accent-blue-600 disabled:opacity-50"
                                 />
                                 <span
                                     className={
@@ -279,7 +361,7 @@ export default function Preferences() {
                             <button
                                 type="button"
                                 onClick={() => void relaunch()}
-                                className="cursor-pointer rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                             >
                                 Restart now
                             </button>
