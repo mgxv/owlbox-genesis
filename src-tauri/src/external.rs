@@ -1,3 +1,5 @@
+use crate::diag;
+
 pub fn stays_inside(url: &tauri::Url) -> bool {
     matches!(
         url.host_str().unwrap_or(""),
@@ -5,20 +7,31 @@ pub fn stays_inside(url: &tauri::Url) -> bool {
     )
 }
 
+// Don't swap for tauri-plugin-opener: its window.open hijack swallows
+// Gmail's link clicks and its detached spawn crashes AppKit on fork.
 pub fn open(url: &str) {
     #[cfg(target_os = "macos")]
     {
-        let _ = std::process::Command::new("open").arg(url).spawn();
+        diag::check(
+            std::process::Command::new("open").arg(url).spawn(),
+            "[external] open",
+        );
     }
     #[cfg(target_os = "windows")]
     {
-        let _ = std::process::Command::new("cmd")
-            .args(["/c", "start", "", url])
-            .spawn();
+        diag::check(
+            std::process::Command::new("cmd")
+                .args(["/c", "start", "", url])
+                .spawn(),
+            "[external] open",
+        );
     }
     #[cfg(target_os = "linux")]
     {
-        let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+        diag::check(
+            std::process::Command::new("xdg-open").arg(url).spawn(),
+            "[external] open",
+        );
     }
 }
 
