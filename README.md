@@ -5,11 +5,23 @@ A minimal macOS application that hosts Gmail's web client in a native window, bu
 ## Features
 
 - Dock icon badge with unread count
-- `mailto:` handler registration
-- Native preferences pane (theme, dock badge, launch at login, crash reporting)
-- Keyboard shortcuts (`Cmd+,` prefs, `Cmd+Shift+N` compose, `Cmd+R` reload, `Cmd+F` find, `Cmd+Shift+V` paste plain, `Cmd+=` / `Cmd+-` / `Cmd+0` zoom)
+- `mailto:` handler registration (Owlbox can be set as the system default mail handler)
+- Compose opens in its own native window (`Cmd+Shift+N`)
+- External links open in the system default browser
+- Native preferences pane (theme, dock badge, launch at login, crash reporting, check for updates)
+- Native keyboard shortcuts (see [Shortcuts](#shortcuts))
 - Window state persistence
 - Launch at login
+- Auto-updates — checks on startup and downloads in the background, or trigger manually from Settings
+- Opt-in crash reporting via Sentry (off by default; no email content is ever sent)
+
+## Install
+
+Download the `.dmg` from the [latest release](https://github.com/mgxv/owlbox/releases/latest) and drag **Owlbox** into `/Applications`.
+
+On first launch macOS will block the app because it isn't signed with an Apple Developer account. Right-click **Owlbox** in `/Applications`, choose **Open**, then click **Open** in the dialog. (Alternative: `xattr -dr com.apple.quarantine /Applications/Owlbox.app`.)
+
+Subsequent updates install silently in the background.
 
 ## Non-goals
 
@@ -36,7 +48,12 @@ pnpm install
 pnpm tauri dev
 ```
 
+<details>
+<summary>
+
 ## Verify
+
+</summary>
 
 CI runs every check below on each PR. Run them locally first to catch issues before pushing.
 
@@ -71,7 +88,28 @@ bash .github/scripts/check-audit-expirations.sh
 
 A full bundle build (`pnpm tauri build`) takes 5–15 minutes and isn't strictly required before pushing, but it's the fastest way to catch release-only issues like LTO link failures.
 
-## Build a release
+</details>
+
+<details>
+<summary>
+
+## Release
+
+</summary>
+
+Releases are produced by `.github/workflows/release.yml` when a `v*.*.*` tag is pushed. The workflow builds a universal macOS bundle, signs the updater artifacts with the Tauri signing keys (`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repo secrets), and creates a **draft** GitHub Release containing the `.dmg`, `.app.tar.gz`, `.app.tar.gz.sig`, and `latest.json` (the updater manifest).
+
+To cut a release:
+
+```bash
+# Make sure version is in sync across package.json, src-tauri/Cargo.toml, and src-tauri/tauri.conf.json
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+After the workflow finishes (~10–15 min), review the draft at <https://github.com/mgxv/owlbox/releases> and click **Publish release**. The auto-updater endpoint only resolves to published (non-draft) releases — leaving it as a draft means installed apps won't see the update.
+
+For a local bundle build (unsigned, no upload):
 
 ```bash
 pnpm tauri build
@@ -84,13 +122,22 @@ Outputs:
 
 To wipe all build artifacts and caches, run `./clean.sh`.
 
-## Project layout
+</details>
 
-```
-src-tauri/   Rust host — window setup, event handlers, dock badge, mailto
-injected/    JS injected into the Gmail webview — title parsing, event emission
-src/         React app for the preferences window only (main window is Gmail)
-```
+## Shortcuts
+
+| Shortcut      | Action                |
+| ------------- | --------------------- |
+| `Cmd+,`       | Preferences           |
+| `Cmd+Shift+N` | Compose new message   |
+| `Cmd+R`       | Reload                |
+| `Cmd+F`       | Find / focus search   |
+| `Cmd+Shift+V` | Paste and match style |
+| `Cmd+=`       | Zoom in               |
+| `Cmd+-`       | Zoom out              |
+| `Cmd+0`       | Actual size           |
+
+Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+W`, `Cmd+Q`, etc.) are also wired up.
 
 ## Preferences
 
