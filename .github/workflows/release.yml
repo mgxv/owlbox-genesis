@@ -1,0 +1,49 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*.*.*"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Tag to build (e.g. v0.1.0)"
+                required: true
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        name: Build and publish
+        runs-on: macos-15
+        steps:
+            - uses: actions/checkout@v5
+              with:
+                  ref: ${{ inputs.tag || github.ref }}
+
+            - uses: jdx/mise-action@v2
+
+            - name: Add universal macOS targets
+              run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+            - uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: src-tauri
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: Build, sign, and publish
+              uses: tauri-apps/tauri-action@v0
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+              with:
+                  tagName: ${{ inputs.tag || github.ref_name }}
+                  releaseName: "Owlbox ${{ inputs.tag || github.ref_name }}"
+                  releaseBody: "Auto-generated release. See commit history for changes."
+                  releaseDraft: true
+                  prerelease: false
+                  includeUpdaterJson: true
+                  args: --target universal-apple-darwin
