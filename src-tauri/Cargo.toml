@@ -1,8 +1,8 @@
 [package]
 name = "owlbox"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A minimal native macOS app for Gmail's web client."
+authors = ["mgxv"]
 edition = "2021"
 
 [lib]
