@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use anyhow::Context;
 use tauri::webview::NewWindowResponse;
 use tauri::{
@@ -5,7 +7,7 @@ use tauri::{
     WindowEvent,
 };
 
-use crate::{diag, external};
+use crate::{diag, external, settings};
 
 const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
 
@@ -15,9 +17,23 @@ const INITIAL_URL: &str = "https://accounts.google.com/ServiceLogin?service=mail
 
 const INJECT_SHARED: &str = include_str!("../../injected/shared.js");
 const INJECT_TITLE_SYNC: &str = include_str!("../../injected/title-sync.js");
+const INJECT_DARK_MODE_JS_TEMPLATE: &str = include_str!("../../injected/dark-mode.js");
+const INJECT_DARK_MODE_CSS: &str = include_str!("../../injected/dark-mode.css");
+
+static DARK_MODE_JS: LazyLock<String> = LazyLock::new(|| {
+    let css_literal =
+        serde_json::to_string(INJECT_DARK_MODE_CSS).unwrap_or_else(|_| String::from("\"\""));
+    INJECT_DARK_MODE_JS_TEMPLATE.replacen("\"%%DARK_CSS%%\"", &css_literal, 1)
+});
 
 pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
     let url: tauri::Url = INITIAL_URL.parse().context("parse INITIAL_URL")?;
+
+    let initial_theme = settings::get_string(app.handle(), "theme", "system");
+    let initial_theme_script = format!(
+        "window.__OWLBOX_INITIAL_THEME__ = {};",
+        serde_json::to_string(&initial_theme).unwrap_or_else(|_| String::from("\"system\""))
+    );
 
     let popup_handle = app.handle().clone();
     let mut builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
@@ -28,6 +44,8 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
         .user_agent(USER_AGENT)
         .initialization_script(INJECT_SHARED)
         .initialization_script(INJECT_TITLE_SYNC)
+        .initialization_script(&initial_theme_script)
+        .initialization_script(DARK_MODE_JS.as_str())
         .on_new_window(move |url, _features| handle_popup(&popup_handle, url));
 
     #[cfg(target_os = "macos")]

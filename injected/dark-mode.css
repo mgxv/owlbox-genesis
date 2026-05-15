@@ -1,0 +1,100 @@
+/*
+ * Owlbox dark mode — adapted from Gmail Dark Extended.
+ * Source: https://github.com/m4heshd/gmail-dark-extended
+ * Author: Mahesh Bandara Wijerathna (m4heshd) — Copyright (c) 2023
+ * License: MIT
+ *
+ * The upstream @-moz-document wrapper and ==UserStyle== header are
+ * stripped; this stylesheet is injected only into the Gmail webview, so
+ * the URL guard is unnecessary. Class selectors are Gmail's mangled
+ * internals (.nH, .qY, .iY, ...) and change periodically — when a rule
+ * stops matching, it becomes a silent no-op rather than a hard break.
+ */
+
+:root {
+    --owlbox-card-bg: #212121;
+    --owlbox-fg: #bbbbbb;
+    --owlbox-fg-dim: #999999;
+    --owlbox-selection-fg: #78b4f8;
+    --owlbox-selection-bg: #000000;
+    --owlbox-content-filter: invert(93.2%) hue-rotate(180deg);
+    --owlbox-image-filter: invert(100%) hue-rotate(180deg) contrast(120%)
+        saturate(120%);
+}
+
+/* Native scrollbars + form controls follow our dark palette. */
+html {
+    color-scheme: dark;
+}
+
+/* Email viewer pane */
+.iY {
+    background: transparent !important;
+}
+
+/* Message-list cards */
+.nH.qY {
+    background-color: var(--owlbox-card-bg);
+    box-shadow: none !important;
+}
+.nH.qY .t1 {
+    color: var(--owlbox-fg) !important;
+}
+.nH.qY .t2,
+.nH.qY .vL {
+    color: var(--owlbox-fg-dim);
+}
+.nH.qY .vU {
+    color: var(--owlbox-fg);
+}
+.nH.qY .tk > div:first-child {
+    filter: invert(100%);
+}
+
+/* Rendered email body */
+.gs .ii.gt {
+    filter: var(--owlbox-content-filter);
+}
+.gs .ii.gt img {
+    filter: var(--owlbox-image-filter);
+}
+.gs .ii.gt ::selection {
+    color: var(--owlbox-selection-fg) !important;
+    background: var(--owlbox-selection-bg);
+}
+
+/* Compose / reply / forward editors */
+.AD,
+.aSt,
+.gA .I5 {
+    filter: var(--owlbox-content-filter);
+}
+.AD .az2 .J-JN-M-I-Jm,
+.aSt .az2 .J-JN-M-I-Jm,
+.gA .I5 .az2 .J-JN-M-I-Jm {
+    color: black;
+}
+.AD .J-M,
+.aSt .J-M,
+.gA .I5 .J-M {
+    filter: var(--owlbox-content-filter);
+}
+.AD img:not(.uC > img),
+.aSt img:not(.uC > img),
+.gA .I5 img:not(.uC > img) {
+    filter: var(--owlbox-image-filter);
+}
+.AD ::selection,
+.aSt ::selection,
+.gA .I5 ::selection {
+    color: var(--owlbox-selection-fg) !important;
+    background: var(--owlbox-selection-bg);
+}
+
+/* Forwarded-message editor */
+.afC {
+    filter: var(--owlbox-content-filter);
+}
+.afC .afH {
+    filter: var(--owlbox-image-filter);
+}
