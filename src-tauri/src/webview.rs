@@ -5,7 +5,7 @@ use tauri::{
     WindowEvent,
 };
 
-use crate::{diag, external, gmail_theme};
+use crate::{diag, external, gmail_theme, paths};
 
 pub(crate) const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
 
@@ -23,7 +23,7 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
 
     let popup_handle = app.handle().clone();
     let prelude = gmail_theme::initial_prelude(app.handle());
-    let mut builder = WebviewWindowBuilder::new(app, crate::paths::WINDOW_MAIN, WebviewUrl::External(url))
+    let mut builder = WebviewWindowBuilder::new(app, paths::WINDOW_MAIN, WebviewUrl::External(url))
         .title("Owlbox")
         .inner_size(1200.0, 800.0)
         .min_inner_size(800.0, 600.0)
@@ -56,7 +56,7 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
 // auth/mail URLs inline and everything else to the system browser.
 fn handle_popup<R: Runtime>(handle: &AppHandle<R>, url: tauri::Url) -> NewWindowResponse<R> {
     if external::stays_inside(&url) {
-        if let Some(window) = handle.get_webview_window(crate::paths::WINDOW_MAIN) {
+        if let Some(window) = handle.get_webview_window(paths::WINDOW_MAIN) {
             diag::check(window.navigate(url), "[webview] popup navigate");
         }
     } else {
