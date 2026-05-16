@@ -39,21 +39,46 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Build, sign, and publish
-              uses: tauri-apps/tauri-action@v0
+            - name: Build and sign
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-              with:
-                  tagName: ${{ inputs.tag || github.ref_name }}
-                  releaseName: "Owlbox ${{ inputs.tag || github.ref_name }}"
-                  releaseBody: "Auto-generated release. See commit history for changes."
-                  releaseDraft: true
-                  prerelease: false
-                  includeUpdaterJson: false
-                  args: --target universal-apple-darwin -- --locked
+              run: pnpm tauri build --target universal-apple-darwin -- --locked
+
+            - name: Verify signed bundle
+              run: |
+                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
+                  test -d "${BUNDLE}/Owlbox.app"         || { echo "Missing Owlbox.app"; exit 1; }
+                  test -f "${BUNDLE}/Owlbox.app.tar.gz"  || { echo "Missing tarball"; exit 1; }
+                  test -f "${BUNDLE}/Owlbox.app.tar.gz.sig" || { echo "Missing signature — signing likely failed"; exit 1; }
+                  echo "Bundle verified."
+
+            - name: Publish release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG="${{ inputs.tag || github.ref_name }}"
+                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
+                  DMG=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+
+                  if gh release view "${TAG}" >/dev/null 2>&1; then
+                      gh release edit "${TAG}" \
+                          --title "Owlbox ${TAG}" \
+                          --notes "Auto-generated release. See commit history for changes." \
+                          --draft
+                  else
+                      gh release create "${TAG}" \
+                          --title "Owlbox ${TAG}" \
+                          --notes "Auto-generated release. See commit history for changes." \
+                          --draft
+                  fi
+
+                  cp "${BUNDLE}/Owlbox.app.tar.gz" Owlbox_universal.app.tar.gz
+                  gh release upload "${TAG}" \
+                      Owlbox_universal.app.tar.gz \
+                      "${DMG}" \
+                      --clobber
 
             - name: Upload updater JSON
               env:
@@ -61,13 +86,8 @@ jobs:
               run: |
                   TAG="${{ inputs.tag || github.ref_name }}"
                   BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  SIG_FILE="${BUNDLE}/Owlbox.app.tar.gz.sig"
-                  if [ ! -f "$SIG_FILE" ]; then
-                    echo "Error: $SIG_FILE not found — signing likely failed"
-                    exit 1
-                  fi
+                  SIG=$(cat "${BUNDLE}/Owlbox.app.tar.gz.sig")
                   VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
-                  SIG=$(cat "$SIG_FILE")
                   DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
                   URL="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_universal.app.tar.gz"
                   jq -n \
