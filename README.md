@@ -4,24 +4,39 @@ A minimal macOS application that hosts Gmail's web client in a native window, bu
 
 ## Features
 
-- Dock icon badge with unread count
+- Dock icon badge with unread count, parsed from Gmail's tab title
 - `mailto:` handler registration (Owlbox can be set as the system default mail handler)
 - Compose opens in its own native window (`Cmd+Shift+N`)
 - External links open in the system default browser
-- Native preferences pane (theme, Gmail dark theme, default zoom, dock badge, launch at login, crash reporting, check for updates)
+- Native preferences pane with General, Appearance, and Advanced tabs
 - Native keyboard shortcuts (see [Shortcuts](#shortcuts))
-- Window state persistence
+- Window state persistence across restarts
 - Launch at login
-- Auto-updates — checks on startup and downloads in the background, or trigger manually from Settings
+- Auto-updates — checks and installs silently on startup, takes effect on next launch; or check manually from Preferences → General
 - Opt-in crash reporting via Sentry (off by default; no email content is ever sent)
 
 ## Install
 
-Download the `.dmg` from the [latest release](https://github.com/mgxv/owlbox/releases/latest) and drag **Owlbox** into `/Applications`.
+Download the `.dmg` for your Mac from the [latest release](https://github.com/mgxv/owlbox/releases/latest):
 
-On first launch macOS will block the app because it isn't signed with an Apple Developer account. Right-click **Owlbox** in `/Applications`, choose **Open**, then click **Open** in the dialog. (Alternative: `xattr -dr com.apple.quarantine /Applications/Owlbox.app`.)
+- **Apple Silicon (M1 and later)** — `Owlbox_*_aarch64.dmg`
+- **Intel** — `Owlbox_*_x64.dmg`
 
-Subsequent updates install silently in the background.
+Drag **Owlbox** into `/Applications`.
+
+On first launch macOS will block the app because it isn't signed with an Apple Developer account:
+
+1. Double-click **Owlbox** — macOS shows an alert saying it cannot be opened. Click **Done**.
+2. Open **System Settings → Privacy & Security** and scroll to the Security section.
+3. Click **Open Anyway** next to the Owlbox message.
+4. Click **Open Anyway** in the confirmation dialog.
+5. Enter your password or confirm with Touch ID if prompted.
+
+Alternatively, run this in Terminal to remove the quarantine flag without going through the UI:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Owlbox.app
+```
 
 ## Non-goals
 
@@ -98,7 +113,11 @@ A full bundle build (`pnpm tauri build`) takes 5–15 minutes and isn't strictly
 
 </summary>
 
-Releases are produced by `.github/workflows/release.yml` when a `v*.*.*` tag is pushed. The workflow builds a universal macOS bundle, signs the updater artifacts with the Tauri signing keys (`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repo secrets), and creates a **draft** GitHub Release containing the `.dmg`, `.app.tar.gz`, `.app.tar.gz.sig`, and `latest.json` (the updater manifest).
+Releases are produced by `.github/workflows/release.yml` when a `v*.*.*` tag is pushed. The workflow builds separate native binaries for Apple Silicon (`aarch64-apple-darwin`) and Intel (`x86_64-apple-darwin`), signs the updater artifacts with the Tauri signing keys (`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repo secrets), and creates a **draft** GitHub Release containing:
+
+- `Owlbox_*_aarch64.dmg` and `Owlbox_*_x86_64.dmg`
+- `Owlbox_aarch64.app.tar.gz` and `Owlbox_x64.app.tar.gz`
+- `latest.json` — the updater manifest with per-arch signatures and download URLs
 
 To cut a release:
 
@@ -108,7 +127,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-After the workflow finishes (~10–15 min), review the draft at <https://github.com/mgxv/owlbox/releases> and click **Publish release**. The auto-updater endpoint only resolves to published (non-draft) releases — leaving it as a draft means installed apps won't see the update.
+After the workflow finishes (~20–30 min), review the draft at <https://github.com/mgxv/owlbox/releases> and click **Publish release**. The auto-updater endpoint only resolves to published (non-draft) releases — leaving it as a draft means installed apps won't see the update.
 
 For a local bundle build (unsigned, no upload):
 
@@ -153,6 +172,8 @@ Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+
 
 `Cmd+=` / `Cmd+-` step zoom in 10% increments and clamp to 50–150%. `Cmd+0` resets to `defaultZoom`.
 
-`gmailTheme` themes the Gmail web client itself via a bundled [Dark Reader](https://darkreader.org/) build injected as a user script — `theme` only controls Owlbox's own window chrome.
+`gmailTheme` themes the Gmail web client itself via a bundled [Dark Reader](https://darkreader.org/) build injected as a user script — `theme` only controls Owlbox's own window chrome. Changing `gmailTheme` requires a restart to take effect.
+
+**Reset app** (Advanced tab) clears all WebView data — cookies, session, localStorage, and cache — and resets all preferences to defaults. The next launch will prompt for Gmail sign-in.
 
 Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.
