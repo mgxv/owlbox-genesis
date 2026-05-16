@@ -49,27 +49,26 @@ jobs:
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
               run: pnpm tauri build --target x86_64-apple-darwin -- --locked
 
-            - name: Strip ad-hoc signature and recreate DMG (aarch64)
+            - name: Strip ad-hoc signatures and recreate DMGs
               run: |
-                  APP=src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app
-                  DMG=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
-                  codesign --remove-signature "$APP"
-                  TMPDIR=$(mktemp -d)
-                  cp -r "$APP" "$TMPDIR/"
-                  ln -s /Applications "$TMPDIR/Applications"
-                  hdiutil create -volname "Owlbox" -srcfolder "$TMPDIR" -ov -format UDZO "$DMG"
-                  rm -rf "$TMPDIR"
+                  set -euo pipefail
+                  for ARCH in aarch64-apple-darwin x86_64-apple-darwin; do
+                      APP="src-tauri/target/${ARCH}/release/bundle/macos/Owlbox.app"
+                      DMG=$(find "src-tauri/target/${ARCH}/release/bundle/dmg" -name "*.dmg" | head -1)
 
-            - name: Strip ad-hoc signature and recreate DMG (x86_64)
-              run: |
-                  APP=src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app
-                  DMG=$(find src-tauri/target/x86_64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
-                  codesign --remove-signature "$APP"
-                  TMPDIR=$(mktemp -d)
-                  cp -r "$APP" "$TMPDIR/"
-                  ln -s /Applications "$TMPDIR/Applications"
-                  hdiutil create -volname "Owlbox" -srcfolder "$TMPDIR" -ov -format UDZO "$DMG"
-                  rm -rf "$TMPDIR"
+                      find "$APP" -type f | while IFS= read -r f; do
+                          if file "$f" | grep -q "Mach-O"; then
+                              codesign --remove-signature "$f" 2>/dev/null || true
+                          fi
+                      done
+                      codesign --remove-signature "$APP"
+
+                      TMPDIR=$(mktemp -d)
+                      cp -r "$APP" "$TMPDIR/"
+                      ln -s /Applications "$TMPDIR/Applications"
+                      hdiutil create -volname "Owlbox" -srcfolder "$TMPDIR" -ov -format UDZO "$DMG"
+                      rm -rf "$TMPDIR"
+                  done
 
             - name: Create and sign updater bundles
               env:
