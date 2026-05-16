@@ -18,11 +18,11 @@ jobs:
         name: Build and publish
         runs-on: macos-15
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
               with:
                   ref: ${{ inputs.tag || github.ref }}
 
-            - uses: jdx/mise-action@v2
+            - uses: jdx/mise-action@v4
 
             - name: Add universal macOS targets
               run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
@@ -31,7 +31,8 @@ jobs:
               with:
                   workspaces: src-tauri
 
-            - run: pnpm install --frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
             - name: Build, sign, and publish
               uses: tauri-apps/tauri-action@v0
@@ -39,6 +40,7 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
               with:
                   tagName: ${{ inputs.tag || github.ref_name }}
                   releaseName: "Owlbox ${{ inputs.tag || github.ref_name }}"
@@ -46,4 +48,5 @@ jobs:
                   releaseDraft: true
                   prerelease: false
                   includeUpdaterJson: true
+                  updaterJsonKeepUniversal: true
                   args: --target universal-apple-darwin

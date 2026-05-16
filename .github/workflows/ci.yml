@@ -21,7 +21,7 @@ jobs:
         name: actionlint
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - name: Run actionlint
               run: |
                   bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
@@ -31,7 +31,7 @@ jobs:
         name: shellcheck
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - uses: ludeeus/action-shellcheck@master
               with:
                   severity: warning
@@ -40,7 +40,7 @@ jobs:
         name: markdown links
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - uses: lycheeverse/lychee-action@v2
               with:
                   args: --no-progress --max-concurrency 4 README.md
@@ -52,8 +52,8 @@ jobs:
         name: tsc
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: pnpm install --frozen-lockfile
             - run: pnpm exec tsc --noEmit
 
@@ -61,8 +61,8 @@ jobs:
         name: eslint
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: pnpm install --frozen-lockfile
             - run: pnpm lint
 
@@ -70,8 +70,8 @@ jobs:
         name: prettier
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: pnpm install --frozen-lockfile
             - run: pnpm format:check
 
@@ -79,8 +79,8 @@ jobs:
         name: vite build
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: pnpm install --frozen-lockfile
             - run: pnpm build
 
@@ -88,8 +88,8 @@ jobs:
         name: vitest
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: pnpm install --frozen-lockfile
             - run: pnpm test
 
@@ -105,8 +105,8 @@ jobs:
             run:
                 working-directory: src-tauri
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: rustup component add rustfmt
             - run: cargo fmt --all -- --check
 
@@ -117,8 +117,8 @@ jobs:
             run:
                 working-directory: src-tauri
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - run: rustup component add clippy
             - uses: Swatinem/rust-cache@v2
               with:
@@ -132,8 +132,8 @@ jobs:
             run:
                 working-directory: src-tauri
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - name: Install cargo-audit
               run: cargo install --locked cargo-audit
             - run: cargo audit
@@ -148,8 +148,8 @@ jobs:
             run:
                 working-directory: src-tauri
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - uses: Swatinem/rust-cache@v2
               with:
                   workspaces: src-tauri
@@ -163,8 +163,8 @@ jobs:
         name: tauri build
         runs-on: macos-15
         steps:
-            - uses: actions/checkout@v5
-            - uses: jdx/mise-action@v2
+            - uses: actions/checkout@v6
+            - uses: jdx/mise-action@v4
             - uses: Swatinem/rust-cache@v2
               with:
                   workspaces: src-tauri
