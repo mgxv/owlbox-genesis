@@ -20,7 +20,7 @@
         "targets": ["app", "dmg"],
         "icon": ["icons/icon.icns"],
         "macOS": {
-            "minimumSystemVersion": "15.0"
+            "minimumSystemVersion": "13.0"
         }
     },
     "plugins": {
