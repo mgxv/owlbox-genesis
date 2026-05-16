@@ -175,7 +175,7 @@ jobs:
                   test -d src-tauri/target/release/bundle/macos/Owlbox.app
                   test -f src-tauri/target/release/bundle/dmg/Owlbox_*.dmg
             - name: Upload .app + .dmg
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: Owlbox-macos
                   path: |
