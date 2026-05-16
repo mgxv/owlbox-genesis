@@ -56,12 +56,6 @@ jobs:
                       APP="src-tauri/target/${ARCH}/release/bundle/macos/Owlbox.app"
                       DMG=$(find "src-tauri/target/${ARCH}/release/bundle/dmg" -name "*.dmg" | head -1)
 
-                      find "$APP" -type f | while IFS= read -r f; do
-                          if file "$f" | grep -q "Mach-O"; then
-                              codesign --remove-signature "$f" 2>/dev/null || true
-                          fi
-                      done
-                      codesign --remove-signature "$APP"
                       codesign --deep --force --sign - "$APP"
 
                       TMPDIR=$(mktemp -d)
