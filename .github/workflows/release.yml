@@ -27,6 +27,27 @@ jobs:
               with:
                   ref: ${{ inputs.tag || github.ref }}
 
+            - name: Verify version consistency
+              run: |
+                  set -euo pipefail
+                  TAG="${{ inputs.tag || github.ref_name }}"
+                  V_TAURI=$(jq -r '.version' src-tauri/tauri.conf.json)
+                  V_PKG=$(jq -r '.version' package.json)
+                  V_CARGO=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+                  echo "tauri.conf.json : $V_TAURI"
+                  echo "package.json    : $V_PKG"
+                  echo "Cargo.toml      : $V_CARGO"
+                  echo "git tag         : $TAG"
+                  if [[ "$V_TAURI" != "$V_PKG" || "$V_TAURI" != "$V_CARGO" ]]; then
+                      echo "ERROR: version mismatch across manifests — run scripts/bump-version.sh" >&2
+                      exit 1
+                  fi
+                  if [[ "$TAG" != "v${V_TAURI}" ]]; then
+                      echo "ERROR: git tag ($TAG) does not match manifest version (v${V_TAURI})" >&2
+                      exit 1
+                  fi
+                  echo "All versions consistent: $V_TAURI"
+
             - uses: jdx/mise-action@v4
 
             - name: Add macOS targets
