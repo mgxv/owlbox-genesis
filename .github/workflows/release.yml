@@ -53,7 +53,7 @@ jobs:
                   releaseDraft: true
                   prerelease: false
                   includeUpdaterJson: false
-                  args: --target universal-apple-darwin --locked
+                  args: --target universal-apple-darwin -- --locked
 
             - name: Upload updater JSON
               env:
