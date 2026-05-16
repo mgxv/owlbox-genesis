@@ -38,7 +38,7 @@ jobs:
                   echo "package.json    : $V_PKG"
                   echo "Cargo.toml      : $V_CARGO"
                   echo "git tag         : $TAG"
-                  if [[ "$V_TAURI" != "$V_PKG" || "$V_TAURI" != "$V_CARGO" ]]; then
+                  if [[ "$V_TAURI" != "$V_PKG" ]] || [[ "$V_TAURI" != "$V_CARGO" ]]; then
                       echo "ERROR: version mismatch across manifests — run scripts/bump-version.sh" >&2
                       exit 1
                   fi
