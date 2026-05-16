@@ -17,7 +17,7 @@ pub fn initial_prelude<R: Runtime>(app: &AppHandle<R>) -> String {
 }
 
 pub fn apply<R: Runtime>(app: &AppHandle<R>) {
-    let Some(main) = app.get_webview_window("main") else {
+    let Some(main) = app.get_webview_window(crate::paths::WINDOW_MAIN) else {
         return;
     };
     let mode = resolve(app);

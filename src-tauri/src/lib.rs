@@ -26,7 +26,7 @@ pub fn run() -> anyhow::Result<()> {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window(paths::WINDOW_MAIN) {
                 // Bring-forward dance: no-op on already-correct state.
                 let _ = window.unminimize();
                 let _ = window.show();
@@ -111,7 +111,7 @@ pub fn run() -> anyhow::Result<()> {
                 ..
             } = event
             {
-                if let Some(window) = app.get_webview_window("main") {
+                if let Some(window) = app.get_webview_window(paths::WINDOW_MAIN) {
                     let visible = window.is_visible().unwrap_or(false);
                     let minimized = window.is_minimized().unwrap_or(false);
                     if !has_visible_windows || !visible || minimized {

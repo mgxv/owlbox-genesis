@@ -10,6 +10,8 @@ import {
     WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 
+import { Store } from "@tauri-apps/plugin-store";
+import { PREFS_STORE, KEY_GMAIL_THEME } from "./constants";
 import { usePreferences, type Theme, type GmailTheme } from "./usePreferences";
 
 type TabId = "general" | "appearance" | "advanced";
@@ -261,7 +263,7 @@ export default function Preferences() {
                                     const next = e.target.value as GmailTheme;
                                     void (async () => {
                                         const ok = await confirm(
-                                            "Owlbox needs to restart to apply the Gmail theme change.",
+                                            "Owlbox needs to restart to apply the Gmail theme change.\n\nDark mode is applied via Dark Reader, an open-source stylesheet engine injected into Gmail. Occasional rendering inconsistencies may appear.",
                                             {
                                                 title: "Restart to apply",
                                                 kind: "info",
@@ -270,6 +272,9 @@ export default function Preferences() {
                                             },
                                         );
                                         if (!ok) return;
+                                        const s = await Store.load(PREFS_STORE);
+                                        await s.set(KEY_GMAIL_THEME, next);
+                                        await s.save();
                                         setGmailTheme(next);
                                         await relaunch();
                                     })();

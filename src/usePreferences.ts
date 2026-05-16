@@ -1,6 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { Store } from "@tauri-apps/plugin-store";
 import { emit } from "@tauri-apps/api/event";
+import {
+    PREFS_STORE,
+    KEY_THEME,
+    KEY_GMAIL_THEME,
+    KEY_DEFAULT_ZOOM,
+    KEY_SHOW_DOCK_BADGE,
+    KEY_LAUNCH_AT_STARTUP,
+    KEY_CRASH_REPORTING,
+    EVENT_THEME_CHANGED,
+    EVENT_GMAIL_THEME_CHANGED,
+    EVENT_DEFAULT_ZOOM_CHANGED,
+    EVENT_BADGE_PREF_CHANGED,
+    EVENT_LAUNCH_AT_STARTUP_CHANGED,
+} from "./constants";
 
 export type Theme = "light" | "dark" | "system";
 export type GmailTheme = "light" | "dark";
@@ -38,25 +52,25 @@ export function usePreferences(): UsePreferences {
     useEffect(() => {
         void (async () => {
             try {
-                const s = await Store.load("preferences.json");
+                const s = await Store.load(PREFS_STORE);
                 setStore(s);
                 if ((await s.get("enableNotifications")) !== undefined) {
                     await s.delete("enableNotifications");
                     await s.save();
                 }
-                setTheme((await s.get<Theme>("theme")) ?? "system");
+                setTheme((await s.get<Theme>(KEY_THEME)) ?? "system");
                 setGmailTheme(
-                    (await s.get<GmailTheme>("gmailTheme")) ?? "light",
+                    (await s.get<GmailTheme>(KEY_GMAIL_THEME)) ?? "light",
                 );
-                setDefaultZoom((await s.get<number>("defaultZoom")) ?? 100);
+                setDefaultZoom((await s.get<number>(KEY_DEFAULT_ZOOM)) ?? 100);
                 setShowDockBadge(
-                    (await s.get<boolean>("showDockBadge")) ?? true,
+                    (await s.get<boolean>(KEY_SHOW_DOCK_BADGE)) ?? true,
                 );
                 setLaunchAtStartup(
-                    (await s.get<boolean>("launchAtStartup")) ?? false,
+                    (await s.get<boolean>(KEY_LAUNCH_AT_STARTUP)) ?? false,
                 );
                 setCrashReporting(
-                    (await s.get<boolean>("crashReporting")) ?? false,
+                    (await s.get<boolean>(KEY_CRASH_REPORTING)) ?? false,
                 );
             } catch (e) {
                 console.error("Failed to load preferences, using defaults:", e);
@@ -89,37 +103,37 @@ export function usePreferences(): UsePreferences {
         }> = [];
         if (prev.theme !== current.theme)
             changes.push({
-                key: "theme",
+                key: KEY_THEME,
                 value: current.theme,
-                event: "theme-changed",
+                event: EVENT_THEME_CHANGED,
             });
         if (prev.gmailTheme !== current.gmailTheme)
             changes.push({
-                key: "gmailTheme",
+                key: KEY_GMAIL_THEME,
                 value: current.gmailTheme,
-                event: "gmail-theme-changed",
+                event: EVENT_GMAIL_THEME_CHANGED,
             });
         if (prev.defaultZoom !== current.defaultZoom)
             changes.push({
-                key: "defaultZoom",
+                key: KEY_DEFAULT_ZOOM,
                 value: current.defaultZoom,
-                event: "default-zoom-changed",
+                event: EVENT_DEFAULT_ZOOM_CHANGED,
             });
         if (prev.showDockBadge !== current.showDockBadge)
             changes.push({
-                key: "showDockBadge",
+                key: KEY_SHOW_DOCK_BADGE,
                 value: current.showDockBadge,
-                event: "badge-pref-changed",
+                event: EVENT_BADGE_PREF_CHANGED,
             });
         if (prev.launchAtStartup !== current.launchAtStartup)
             changes.push({
-                key: "launchAtStartup",
+                key: KEY_LAUNCH_AT_STARTUP,
                 value: current.launchAtStartup,
-                event: "launch-at-startup-changed",
+                event: EVENT_LAUNCH_AT_STARTUP_CHANGED,
             });
         if (prev.crashReporting !== current.crashReporting)
             changes.push({
-                key: "crashReporting",
+                key: KEY_CRASH_REPORTING,
                 value: current.crashReporting,
             });
         if (changes.length === 0) return;

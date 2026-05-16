@@ -12,7 +12,7 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
             ));
             return;
         };
-        if let Some(window) = handle.get_webview_window("main") {
+        if let Some(window) = handle.get_webview_window(crate::paths::WINDOW_MAIN) {
             diag::check(window.set_title(&email), "[title] set_title");
         }
     });

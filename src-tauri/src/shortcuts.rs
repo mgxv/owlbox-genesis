@@ -150,12 +150,12 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
             diag::check(compose::open(app, None), "[shortcuts] compose");
         }
         "reload" => {
-            if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window(crate::paths::WINDOW_MAIN) {
                 diag::check(window.eval("location.reload();"), "[shortcuts] reload");
             }
         }
         "focus_search" => {
-            if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window(crate::paths::WINDOW_MAIN) {
                 diag::check(
                     window.eval(FOCUS_SEARCH_JS),
                     "[shortcuts] focus_search eval",
@@ -183,7 +183,7 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
 }
 
 fn apply_zoom<R: Runtime>(app: &AppHandle<R>, percent: u32) {
-    let Some(window) = app.get_webview_window("main") else {
+    let Some(window) = app.get_webview_window(crate::paths::WINDOW_MAIN) else {
         return;
     };
     let factor = f64::from(percent) / 100.0;
@@ -195,7 +195,7 @@ fn apply_zoom<R: Runtime>(app: &AppHandle<R>, percent: u32) {
 }
 
 fn paste_plain<R: Runtime>(app: &AppHandle<R>) {
-    let Some(window) = app.get_webview_window("main") else {
+    let Some(window) = app.get_webview_window(crate::paths::WINDOW_MAIN) else {
         return;
     };
     let text = match app.clipboard().read_text() {

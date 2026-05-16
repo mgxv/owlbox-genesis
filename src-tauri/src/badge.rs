@@ -27,7 +27,7 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
 }
 
 fn apply<R: Runtime>(handle: &AppHandle<R>, count: i64) {
-    let Some(window) = handle.get_webview_window("main") else {
+    let Some(window) = handle.get_webview_window(crate::paths::WINDOW_MAIN) else {
         return;
     };
     let enabled = settings::get_bool(handle, "showDockBadge", true);

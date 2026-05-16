@@ -4,7 +4,7 @@ use crate::paths;
 
 #[tauri::command]
 pub async fn reset_app<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = app.get_webview_window(paths::WINDOW_MAIN) {
         if let Err(e) = window.clear_all_browsing_data() {
             log::warn!("[reset] clear_all_browsing_data: {e}");
         }
