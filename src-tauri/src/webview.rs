@@ -5,7 +5,7 @@ use tauri::{
     WindowEvent,
 };
 
-use crate::{diag, external, gmail_theme, paths};
+use crate::{diag, external, gmail_theme, paths, settings};
 
 pub(crate) const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
 
@@ -23,6 +23,7 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
 
     let popup_handle = app.handle().clone();
     let prelude = gmail_theme::initial_prelude(app.handle());
+    let dark_mode = settings::get_string(app.handle(), "gmailTheme", "light") == "dark";
     let mut builder = WebviewWindowBuilder::new(app, paths::WINDOW_MAIN, WebviewUrl::External(url))
         .title("Owlbox")
         .inner_size(1200.0, 800.0)
@@ -34,14 +35,17 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
         .initialization_script_for_all_frames(INJECT_SHARED)
         .initialization_script(INJECT_TITLE_SYNC)
         .initialization_script_for_all_frames(&prelude)
-        .initialization_script_for_all_frames(INJECT_DARK_READER)
-        .initialization_script_for_all_frames(INJECT_GMAIL_THEME)
         .on_new_window(move |url, _features| handle_popup(&popup_handle, url));
 
     #[cfg(target_os = "macos")]
     {
         builder = builder.title_bar_style(tauri::TitleBarStyle::Transparent);
     }
+
+    if dark_mode {
+        builder = builder.initialization_script_for_all_frames(INJECT_DARK_READER);
+    }
+    builder = builder.initialization_script_for_all_frames(INJECT_GMAIL_THEME);
 
     let window = builder.build().context("build main webview")?;
 
