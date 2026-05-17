@@ -1,9 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { confirm } from "@tauri-apps/plugin-dialog";
-import { relaunch } from "@tauri-apps/plugin-process";
-import { check, type Update } from "@tauri-apps/plugin-updater";
+import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
     Cog6ToothIcon,
@@ -11,13 +6,12 @@ import {
     WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 
-import { Store } from "@tauri-apps/plugin-store";
-import { PREFS_STORE, KEY_GMAIL_THEME } from "./constants";
-import { usePreferences, type Theme, type GmailTheme } from "./usePreferences";
+import { usePreferences } from "./usePreferences";
+import GeneralTab from "./preferences/GeneralTab";
+import AppearanceTab from "./preferences/AppearanceTab";
+import AdvancedTab from "./preferences/AdvancedTab";
 
 type TabId = "general" | "appearance" | "advanced";
-
-const ZOOM_OPTIONS = [70, 80, 90, 100, 110, 120, 130] as const;
 
 const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
     { id: "general", label: "General", Icon: Cog6ToothIcon },
@@ -25,221 +19,8 @@ const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
     { id: "advanced", label: "Advanced", Icon: WrenchScrewdriverIcon },
 ];
 
-type UpdateState =
-    | { status: "idle" }
-    | { status: "checking" }
-    | { status: "up-to-date" }
-    | { status: "available"; version: string }
-    | { status: "installing" }
-    | { status: "ready"; version: string }
-    | { status: "error"; message: string };
-
-function UpdateChecker() {
-    const [state, setState] = useState<UpdateState>({ status: "idle" });
-    const pendingUpdate = useRef<Update | null>(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        void invoke<string | null>("update_pending_version").then((version) => {
-            if (!cancelled && version) setState({ status: "ready", version });
-        });
-        const unlistenPromise = listen<string>("update-ready", (event) => {
-            setState({ status: "ready", version: event.payload });
-        });
-        return () => {
-            cancelled = true;
-            void unlistenPromise.then((f) => f());
-        };
-    }, []);
-
-    async function checkForUpdates() {
-        setState({ status: "checking" });
-        try {
-            const update = await check();
-            pendingUpdate.current = update;
-            setState(
-                update
-                    ? { status: "available", version: update.version }
-                    : { status: "up-to-date" },
-            );
-        } catch (e) {
-            setState({ status: "error", message: String(e) });
-        }
-    }
-
-    async function installUpdate() {
-        if (!pendingUpdate.current) return;
-        const version = pendingUpdate.current.version;
-        setState({ status: "installing" });
-        try {
-            await pendingUpdate.current.downloadAndInstall();
-            setState({ status: "ready", version });
-        } catch (e) {
-            setState({ status: "error", message: String(e) });
-        }
-    }
-
-    const busy = state.status === "checking" || state.status === "installing";
-    const message =
-        state.status === "ready"
-            ? `v${state.version} installed — restart to apply`
-            : state.status === "up-to-date"
-              ? "You're on the latest version."
-              : state.status === "available"
-                ? `Update available: v${state.version}`
-                : state.status === "error"
-                  ? state.message
-                  : null;
-
-    return (
-        <div className="mt-auto flex flex-col items-center gap-1 pt-4">
-            {message && (
-                <p
-                    className={`text-[11px] ${
-                        state.status === "error"
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-neutral-500 dark:text-neutral-400"
-                    }`}
-                >
-                    {message}
-                </p>
-            )}
-            <button
-                type="button"
-                onClick={() => {
-                    if (state.status === "available") {
-                        void installUpdate();
-                    } else if (state.status === "ready") {
-                        void relaunch().catch((e) =>
-                            setState({ status: "error", message: String(e) }),
-                        );
-                    } else {
-                        void checkForUpdates();
-                    }
-                }}
-                disabled={busy}
-                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-            >
-                {state.status === "checking" && "Checking…"}
-                {state.status === "installing" && "Installing…"}
-                {state.status === "available" && "Install update"}
-                {state.status === "ready" && "Restart now"}
-                {(state.status === "idle" ||
-                    state.status === "up-to-date" ||
-                    state.status === "error") &&
-                    "Check for updates"}
-            </button>
-        </div>
-    );
-}
-
-function NotificationsSetupDialog({
-    onConfirm,
-    onCancel,
-}: {
-    onConfirm: () => void;
-    onCancel: () => void;
-}) {
-    const [confirmed, setConfirmed] = useState(false);
-    const [permissionDenied, setPermissionDenied] = useState(false);
-    const [busy, setBusy] = useState(false);
-
-    async function handleOk() {
-        setBusy(true);
-        setPermissionDenied(false);
-        const granted = await invoke<boolean>(
-            "notification_permission_granted",
-        );
-        if (!granted) {
-            setPermissionDenied(true);
-            setBusy(false);
-            return;
-        }
-        onConfirm();
-    }
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="mx-4 w-full max-w-sm rounded-lg bg-white p-6 shadow-2xl dark:bg-neutral-800">
-                <h2 className="mb-3 text-[15px] font-semibold">
-                    Enable desktop notifications
-                </h2>
-                <p className="mb-4 text-[13px] text-neutral-600 dark:text-neutral-400">
-                    Owlbox uses Gmail&apos;s built-in notification system. To
-                    receive notifications for new emails, you must first enable
-                    them in Gmail&apos;s settings:
-                </p>
-                <ol className="mb-5 list-inside list-decimal space-y-1.5 text-[13px] text-neutral-700 dark:text-neutral-300">
-                    <li>
-                        Open Gmail and click the{" "}
-                        <Cog6ToothIcon className="mb-0.5 inline h-4 w-4 align-middle" />{" "}
-                        <strong>→ See all settings</strong>
-                    </li>
-                    <li>
-                        Go to the <strong>General</strong> tab
-                    </li>
-                    <li>
-                        Scroll to <strong>Desktop Notifications</strong>
-                    </li>
-                    <li>
-                        Select{" "}
-                        <strong>&ldquo;New mail notifications on&rdquo;</strong>
-                    </li>
-                    <li>
-                        Click <strong>Save Changes</strong>
-                    </li>
-                </ol>
-                <label className="mb-4 flex cursor-pointer items-center gap-2 text-[13px]">
-                    <input
-                        type="checkbox"
-                        checked={confirmed}
-                        onChange={(e) => {
-                            setConfirmed(e.target.checked);
-                            setPermissionDenied(false);
-                        }}
-                        className="h-4 w-4 accent-blue-600"
-                    />
-                    I&apos;ve enabled Desktop Notifications in Gmail
-                </label>
-                {permissionDenied && (
-                    <p className="mb-4 text-[12px] text-red-600 dark:text-red-400">
-                        Owlbox doesn&apos;t have permission to show
-                        notifications. Please enable it in{" "}
-                        <strong>
-                            System Settings → Notifications → Owlbox
-                        </strong>
-                        .
-                    </p>
-                )}
-                <div className="flex justify-end gap-2">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="rounded border border-neutral-300 bg-white px-3 py-1 text-[13px] hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => void handleOk()}
-                        disabled={!confirmed || busy}
-                        className="rounded border border-blue-500 bg-blue-600 px-3 py-1 text-[13px] text-white hover:bg-blue-700 disabled:opacity-40"
-                    >
-                        OK
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 export default function Preferences() {
     const [activeTab, setActiveTab] = useState<TabId>("general");
-    const [crashReportingAvailable, setCrashReportingAvailable] =
-        useState(true);
-    const [showNotificationsDialog, setShowNotificationsDialog] =
-        useState(false);
-
     const {
         loaded,
         theme,
@@ -259,28 +40,11 @@ export default function Preferences() {
     } = usePreferences();
 
     useEffect(() => {
-        invoke<boolean>("crash_reporting_available")
-            .then(setCrashReportingAvailable)
-            .catch(() => setCrashReportingAvailable(false));
-    }, []);
-
-    useEffect(() => {
-        if (!loaded) return;
-        if (!notificationsEnabled) return;
-        void invoke<boolean>("notification_permission_granted").then(
-            (granted) => {
-                if (!granted) setNotificationsEnabled(false);
-            },
-        );
-    }, [loaded, notificationsEnabled, setNotificationsEnabled]);
-
-    useEffect(() => {
         const html = document.documentElement;
         const apply = (isDark: boolean) => {
             html.classList.toggle("dark", isDark);
             html.style.colorScheme = isDark ? "dark" : "light";
         };
-
         if (theme === "light") {
             apply(false);
             return;
@@ -307,260 +71,60 @@ export default function Preferences() {
     if (!loaded) return null;
 
     return (
-        <>
-            {showNotificationsDialog && (
-                <NotificationsSetupDialog
-                    onConfirm={() => {
-                        setNotificationsEnabled(true);
-                        setShowNotificationsDialog(false);
-                    }}
-                    onCancel={() => {
-                        setShowNotificationsDialog(false);
-                    }}
-                />
-            )}
-            <div className="flex h-screen flex-col bg-neutral-100 font-[system-ui] text-[13px] text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
-                <header className="border-b border-neutral-200/80 bg-neutral-100 dark:border-neutral-700/80 dark:bg-neutral-900">
-                    <nav className="flex justify-center gap-1 px-4 pt-3 pb-2">
-                        {TABS.map(({ id, label, Icon }) => {
-                            const active = activeTab === id;
-                            return (
-                                <button
-                                    key={id}
-                                    type="button"
-                                    className={`flex w-22 flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
-                                        active
-                                            ? "bg-neutral-200/60 dark:bg-neutral-700/60"
-                                            : "hover:bg-neutral-200/40 dark:hover:bg-neutral-700/40"
-                                    }`}
-                                    onClick={() => setActiveTab(id)}
-                                >
-                                    <Icon className="h-6 w-6" />
-                                    <span className="text-[11px] leading-none">
-                                        {label}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </header>
+        <div className="flex h-screen flex-col bg-neutral-100 font-[system-ui] text-[13px] text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
+            <header className="border-b border-neutral-200/80 bg-neutral-100 dark:border-neutral-700/80 dark:bg-neutral-900">
+                <nav className="flex justify-center gap-1 px-4 pt-3 pb-2">
+                    {TABS.map(({ id, label, Icon }) => {
+                        const active = activeTab === id;
+                        return (
+                            <button
+                                key={id}
+                                type="button"
+                                className={`flex w-22 flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
+                                    active
+                                        ? "bg-neutral-200/60 dark:bg-neutral-700/60"
+                                        : "hover:bg-neutral-200/40 dark:hover:bg-neutral-700/40"
+                                }`}
+                                onClick={() => setActiveTab(id)}
+                            >
+                                <Icon className="h-6 w-6" />
+                                <span className="text-[11px] leading-none">
+                                    {label}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </nav>
+            </header>
 
-                <section className="flex-1 overflow-auto px-6 py-5 space-y-4">
-                    {activeTab === "general" && (
-                        <div className="flex h-full flex-col">
-                            <div className="flex justify-center">
-                                <div className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-4">
-                                    <input
-                                        id="pref-notifications"
-                                        type="checkbox"
-                                        checked={notificationsEnabled}
-                                        onChange={(e) => {
-                                            if (e.target.checked) {
-                                                setShowNotificationsDialog(
-                                                    true,
-                                                );
-                                            } else {
-                                                setNotificationsEnabled(false);
-                                            }
-                                        }}
-                                        className="h-4 w-4 accent-blue-600"
-                                    />
-                                    <label htmlFor="pref-notifications">
-                                        Enable desktop notifications
-                                    </label>
-
-                                    <input
-                                        id="pref-dock-badge"
-                                        type="checkbox"
-                                        checked={showDockBadge}
-                                        onChange={(e) =>
-                                            setShowDockBadge(e.target.checked)
-                                        }
-                                        className="h-4 w-4 accent-blue-600"
-                                    />
-                                    <label htmlFor="pref-dock-badge">
-                                        Show unread count in Dock icon
-                                    </label>
-
-                                    <input
-                                        id="pref-launch-startup"
-                                        type="checkbox"
-                                        checked={launchAtStartup}
-                                        onChange={(e) =>
-                                            setLaunchAtStartup(e.target.checked)
-                                        }
-                                        className="h-4 w-4 accent-blue-600"
-                                    />
-                                    <label htmlFor="pref-launch-startup">
-                                        Launch Owlbox at login
-                                    </label>
-                                </div>
-                            </div>
-                            <UpdateChecker />
-                        </div>
-                    )}
-
-                    {activeTab === "appearance" && (
-                        <div className="flex h-full items-start justify-center">
-                            <div className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-4">
-                                <label
-                                    htmlFor="pref-theme"
-                                    className="text-right"
-                                >
-                                    System theme
-                                </label>
-                                <select
-                                    id="pref-theme"
-                                    value={theme}
-                                    onChange={(e) =>
-                                        setTheme(e.target.value as Theme)
-                                    }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                >
-                                    <option value="system">System</option>
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
-
-                                <label
-                                    htmlFor="pref-gmail-theme"
-                                    className="text-right"
-                                >
-                                    Gmail theme
-                                </label>
-                                <select
-                                    id="pref-gmail-theme"
-                                    value={gmailTheme}
-                                    onChange={(e) => {
-                                        const next = e.target
-                                            .value as GmailTheme;
-                                        void (async () => {
-                                            const ok = await confirm(
-                                                "Owlbox needs to restart to apply the Gmail theme change.\n\nDark mode is applied via Dark Reader, an open-source stylesheet engine injected into Gmail. Occasional rendering inconsistencies may appear.",
-                                                {
-                                                    title: "Restart to apply",
-                                                    kind: "info",
-                                                    okLabel: "Restart",
-                                                    cancelLabel: "Cancel",
-                                                },
-                                            );
-                                            if (!ok) return;
-                                            const s =
-                                                await Store.load(PREFS_STORE);
-                                            await s.set(KEY_GMAIL_THEME, next);
-                                            await s.save();
-                                            setGmailTheme(next);
-                                            await relaunch();
-                                        })();
-                                    }}
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                >
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
-
-                                <label
-                                    htmlFor="pref-zoom"
-                                    className="text-right"
-                                >
-                                    Default zoom
-                                </label>
-                                <select
-                                    id="pref-zoom"
-                                    value={defaultZoom}
-                                    onChange={(e) =>
-                                        setDefaultZoom(Number(e.target.value))
-                                    }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                >
-                                    {ZOOM_OPTIONS.map((z) => (
-                                        <option key={z} value={z}>
-                                            {z}%
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === "advanced" && (
-                        <div className="flex h-full flex-col">
-                            <div className="flex justify-center">
-                                <div className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-4">
-                                    <input
-                                        id="pref-crash-reporting"
-                                        type="checkbox"
-                                        checked={
-                                            crashReporting &&
-                                            crashReportingAvailable
-                                        }
-                                        onChange={(e) =>
-                                            setCrashReporting(e.target.checked)
-                                        }
-                                        disabled={!crashReportingAvailable}
-                                        className="h-4 w-4 accent-blue-600 disabled:opacity-50"
-                                    />
-                                    <label
-                                        htmlFor="pref-crash-reporting"
-                                        className={
-                                            !crashReportingAvailable
-                                                ? "text-neutral-500"
-                                                : ""
-                                        }
-                                    >
-                                        Share anonymous crash reports
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="mt-auto flex items-center justify-center gap-2 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        void (async () => {
-                                            const ok = await confirm(
-                                                "This will delete all session data, cookies, cache, and reset all settings to defaults. You will need to sign in to Gmail again.",
-                                                {
-                                                    title: "Reset Owlbox",
-                                                    kind: "warning",
-                                                    okLabel: "Reset",
-                                                    cancelLabel: "Cancel",
-                                                },
-                                            );
-                                            if (!ok) return;
-                                            await invoke("reset_app");
-                                            await relaunch();
-                                        })()
-                                    }
-                                    className="rounded border border-red-300 bg-white px-2 py-1 text-[13px] text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-neutral-800 dark:text-red-400 dark:hover:bg-red-900/20"
-                                >
-                                    Reset app
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        void (async () => {
-                                            const ok = await confirm(
-                                                "Owlbox will restart immediately.",
-                                                {
-                                                    title: "Restart Owlbox",
-                                                    kind: "info",
-                                                    okLabel: "Restart",
-                                                    cancelLabel: "Cancel",
-                                                },
-                                            );
-                                            if (!ok) return;
-                                            await relaunch();
-                                        })()
-                                    }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-                                >
-                                    Restart now
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </section>
-            </div>
-        </>
+            <section className="flex-1 overflow-auto space-y-4 px-6 py-5">
+                {activeTab === "general" && (
+                    <GeneralTab
+                        notificationsEnabled={notificationsEnabled}
+                        setNotificationsEnabled={setNotificationsEnabled}
+                        showDockBadge={showDockBadge}
+                        setShowDockBadge={setShowDockBadge}
+                        launchAtStartup={launchAtStartup}
+                        setLaunchAtStartup={setLaunchAtStartup}
+                    />
+                )}
+                {activeTab === "appearance" && (
+                    <AppearanceTab
+                        theme={theme}
+                        setTheme={setTheme}
+                        gmailTheme={gmailTheme}
+                        setGmailTheme={setGmailTheme}
+                        defaultZoom={defaultZoom}
+                        setDefaultZoom={setDefaultZoom}
+                    />
+                )}
+                {activeTab === "advanced" && (
+                    <AdvancedTab
+                        crashReporting={crashReporting}
+                        setCrashReporting={setCrashReporting}
+                    />
+                )}
+            </section>
+        </div>
     );
 }
