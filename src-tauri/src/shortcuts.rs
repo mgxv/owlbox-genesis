@@ -109,6 +109,8 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
     let window_menu = SubmenuBuilder::new(app, "Window")
         .item(&PredefinedMenuItem::minimize(app, None)?)
         .item(&PredefinedMenuItem::close_window(app, None)?)
+        .separator()
+        .item(&PredefinedMenuItem::bring_all_to_front(app, None)?)
         .build()?;
 
     MenuBuilder::new(app)
