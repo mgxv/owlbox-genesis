@@ -9,6 +9,7 @@ mod compose;
 mod diag;
 mod external;
 mod gmail_theme;
+mod notifications;
 pub mod paths;
 mod preferences;
 mod reset;
@@ -59,6 +60,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             build_info::crash_reporting_available,
             reset::reset_app,
@@ -81,6 +83,8 @@ pub fn run() -> anyhow::Result<()> {
             gmail_theme::register_handler(&handle);
             autostart::register_handler(&handle);
             shortcuts::register_handler(&handle);
+            notifications::request_permission(&handle);
+            notifications::register_handler(&handle);
 
             webview::build(app)?;
             preferences::build_hidden(&handle)?;
