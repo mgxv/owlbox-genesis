@@ -1,20 +1,19 @@
 use tauri::{AppHandle, Manager, Runtime};
 
-use crate::paths;
+use crate::{diag, paths};
 
 #[tauri::command]
 pub async fn reset_app<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(paths::WINDOW_MAIN) {
-        if let Err(e) = window.clear_all_browsing_data() {
-            log::warn!("[reset] clear_all_browsing_data: {e}");
-        }
+        diag::check(
+            window.clear_all_browsing_data(),
+            "[reset] clear_all_browsing_data",
+        );
     }
 
     if let Some(path) = paths::prefs_path() {
         if path.exists() {
-            if let Err(e) = std::fs::remove_file(&path) {
-                log::warn!("[reset] remove preferences: {e}");
-            }
+            diag::check(std::fs::remove_file(&path), "[reset] remove preferences");
         }
     }
 

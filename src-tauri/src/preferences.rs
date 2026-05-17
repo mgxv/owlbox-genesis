@@ -1,24 +1,25 @@
 use anyhow::Context;
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
-use crate::diag;
-
-const PREFS_LABEL: &str = "preferences";
+use crate::{diag, paths};
 
 pub fn build_hidden<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
-    if app.get_webview_window(PREFS_LABEL).is_some() {
+    if app.get_webview_window(paths::WINDOW_PREFS).is_some() {
         return Ok(());
     }
 
-    let mut builder =
-        WebviewWindowBuilder::new(app, PREFS_LABEL, WebviewUrl::App("index.html".into()))
-            .title("Preferences")
-            .inner_size(450.0, 400.0)
-            .resizable(false)
-            .minimizable(false)
-            .maximizable(false)
-            .visible(false)
-            .focused(false);
+    let mut builder = WebviewWindowBuilder::new(
+        app,
+        paths::WINDOW_PREFS,
+        WebviewUrl::App("index.html".into()),
+    )
+    .title("Preferences")
+    .inner_size(450.0, 400.0)
+    .resizable(false)
+    .minimizable(false)
+    .maximizable(false)
+    .visible(false)
+    .focused(false);
 
     #[cfg(target_os = "macos")]
     {
@@ -39,11 +40,11 @@ pub fn build_hidden<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
 }
 
 pub fn toggle<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
-    if app.get_webview_window(PREFS_LABEL).is_none() {
+    if app.get_webview_window(paths::WINDOW_PREFS).is_none() {
         build_hidden(app)?;
     }
     let window = app
-        .get_webview_window(PREFS_LABEL)
+        .get_webview_window(paths::WINDOW_PREFS)
         .context("preferences window missing after build")?;
 
     let visible = window.is_visible().unwrap_or(false);
@@ -52,7 +53,6 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
     if visible && focused {
         diag::check(window.hide(), "[prefs] hide on toggle");
     } else {
-        // Bring-forward dance: no-op on already-correct state.
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();

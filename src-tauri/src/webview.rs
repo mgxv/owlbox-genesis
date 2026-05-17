@@ -19,7 +19,7 @@ const INJECT_NOTIFICATIONS: &str = include_str!("../../injected/notifications.js
 pub(crate) const INJECT_DARK_READER: &str = include_str!("../../injected/dark-reader.js");
 pub(crate) const INJECT_GMAIL_THEME: &str = include_str!("../../injected/gmail-theme.js");
 
-pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
+pub fn build(app: &mut App) -> anyhow::Result<()> {
     let url: tauri::Url = INITIAL_URL.parse().context("parse INITIAL_URL")?;
 
     let popup_handle = app.handle().clone();
@@ -53,7 +53,7 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
     install_close_handler(&window);
     install_script_error_listener(app);
 
-    Ok(window)
+    Ok(())
 }
 
 // WKWebView drops window.open() without a UI delegate; route Google
