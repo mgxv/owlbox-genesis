@@ -2,7 +2,7 @@
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "gmail",
     "description": "Permits injected scripts on mail.google.com pages to emit events to Rust. Cross-origin frames (accounts.google.com, ogs.google.com) receive the same scripts but lack __TAURI_INTERNALS__ so emit() no-ops — no additional permission is needed.",
-    "windows": ["main", "compose-*"],
+    "windows": ["main", "compose"],
     "remote": {
         "urls": ["https://mail.google.com/*"]
     },

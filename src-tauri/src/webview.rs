@@ -15,6 +15,7 @@ const INITIAL_URL: &str = "https://accounts.google.com/ServiceLogin?service=mail
 
 pub(crate) const INJECT_SHARED: &str = include_str!("../../injected/shared.js");
 const INJECT_TITLE_SYNC: &str = include_str!("../../injected/title-sync.js");
+const INJECT_NOTIFICATIONS: &str = include_str!("../../injected/notifications.js");
 pub(crate) const INJECT_DARK_READER: &str = include_str!("../../injected/dark-reader.js");
 pub(crate) const INJECT_GMAIL_THEME: &str = include_str!("../../injected/gmail-theme.js");
 
@@ -30,10 +31,9 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
         .min_inner_size(800.0, 600.0)
         .resizable(true)
         .user_agent(USER_AGENT)
-        // _for_all_frames hits cross-origin iframes (OGS popups);
-        // title-sync stays main-frame only since it reads the top title.
         .initialization_script_for_all_frames(INJECT_SHARED)
         .initialization_script(INJECT_TITLE_SYNC)
+        .initialization_script(INJECT_NOTIFICATIONS)
         .initialization_script_for_all_frames(&prelude)
         .on_new_window(move |url, _features| handle_popup(&popup_handle, url));
 

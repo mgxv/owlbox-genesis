@@ -12,6 +12,7 @@ A minimal macOS application that hosts Gmail's web client in a native window, bu
 - Native keyboard shortcuts (see [Shortcuts](#shortcuts))
 - Window state persistence across restarts
 - Launch at login
+- Native macOS notifications for new emails
 - Auto-updates — checks and installs silently on startup, takes effect on next launch; or check manually from Preferences → General
 - Opt-in crash reporting via Sentry (off by default; no email content is ever sent)
 
@@ -37,6 +38,12 @@ Alternatively, run this in Terminal to remove the quarantine flag without going 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Owlbox.app
 ```
+
+## Notifications
+
+Owlbox shows native macOS notifications for new emails via Gmail's web notification API. macOS will prompt for notification permission on first launch — click **Allow**.
+
+> **Important:** Gmail's own desktop notification setting must also be enabled. In Gmail, go to **Settings (gear icon) → See all settings → General → Desktop Notifications** and set it to **"New mail notifications on"**. Without this, Gmail will not fire notifications regardless of macOS permission.
 
 ## Non-goals
 
