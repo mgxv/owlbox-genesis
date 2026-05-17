@@ -1,20 +1,24 @@
 # Owlbox
 
-A minimal macOS application that hosts Gmail's web client in a native window, built with [Tauri 2](https://tauri.app) and React. Similar in spirit to [Boxy Suite 2](https://www.boxysuite.com/) — Owlbox does not reimplement Gmail; it embeds the real Gmail UI inside a native WKWebView and adds the OS integrations a browser tab can't. Because Tauri uses the system WebView instead of bundling Chromium, the installed footprint is a few megabytes rather than the ~150 MB of an equivalent Electron build.
+A minimal macOS app that wraps Gmail in a native window, built with [Tauri 2](https://tauri.app) and React. Owlbox doesn't reimplement Gmail — it embeds the real Gmail UI inside a native WKWebView and layers on the OS integrations a browser tab can't provide. Because Tauri uses the system WebView instead of bundling Chromium, the installed footprint is a few megabytes rather than the ~150 MB of an equivalent Electron build.
 
 ## Features
 
-- Dock icon badge with unread count, parsed from Gmail's tab title
-- `mailto:` handler registration (Owlbox can be set as the system default mail handler)
-- Compose opens in its own native window (`Cmd+Shift+N`)
-- External links open in the system default browser
+- Dock icon badge with unread count
+- Native macOS notifications for new emails
+- `mailto:` deep-link handler (Owlbox can be set as the system default mail client)
+- Compose window (`Cmd+Shift+N`)
+- External links open in the default browser
 - Native preferences pane with General, Appearance, and Advanced tabs
-- Native keyboard shortcuts (see [Shortcuts](#shortcuts))
+- Keyboard shortcuts for common actions (see [Shortcuts](#shortcuts))
 - Window state persistence across restarts
 - Launch at login
-- Native macOS notifications for new emails
-- Auto-updates — checks and installs silently on startup, takes effect on next launch; or check manually from Preferences → General
+- Auto-updates — checks on startup, installs silently, takes effect on next launch; or check manually via Preferences → General
 - Opt-in crash reporting via Sentry (off by default; no email content is ever sent)
+
+## Requirements
+
+- macOS 15 (Sequoia) or newer
 
 ## Install
 
@@ -25,7 +29,7 @@ Download the `.dmg` for your Mac from the [latest release](https://github.com/mg
 
 Drag **Owlbox** into `/Applications`.
 
-On first launch macOS will block the app because it isn't signed with an Apple Developer account:
+On first launch macOS will block the app because it isn't notarized with an Apple Developer account:
 
 1. Double-click **Owlbox** — macOS shows an alert saying it cannot be opened. Click **Done**.
 2. Open **System Settings → Privacy & Security** and scroll to the Security section.
@@ -33,7 +37,7 @@ On first launch macOS will block the app because it isn't signed with an Apple D
 4. Click **Open Anyway** in the confirmation dialog.
 5. Enter your password or confirm with Touch ID if prompted.
 
-Alternatively, run this in Terminal to remove the quarantine flag without going through the UI:
+Alternatively, strip the quarantine flag directly from Terminal:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Owlbox.app
@@ -41,20 +45,55 @@ xattr -dr com.apple.quarantine /Applications/Owlbox.app
 
 ## Notifications
 
-Owlbox shows native macOS notifications for new emails via Gmail's web notification API. macOS will prompt for notification permission on first launch — click **Allow**.
+macOS will prompt for notification permission on first launch — click **Allow**.
 
-> **Important:** Gmail's own desktop notification setting must also be enabled. In Gmail, go to **Settings (gear icon) → See all settings → General → Desktop Notifications** and set it to **"New mail notifications on"**. Without this, Gmail will not fire notifications regardless of macOS permission.
+Gmail's own desktop notification setting must also be turned on. In Gmail, open **Settings (gear icon) → See all settings → General → Desktop Notifications** and select **"New mail notifications on"**, then save. Without this Gmail won't fire notifications regardless of macOS permission.
+
+## Shortcuts
+
+| Shortcut      | Action                |
+| ------------- | --------------------- |
+| `Cmd+,`       | Preferences           |
+| `Cmd+Shift+N` | Compose new message   |
+| `Cmd+R`       | Reload                |
+| `Cmd+F`       | Find / focus search   |
+| `Cmd+Shift+V` | Paste and match style |
+| `Cmd+=`       | Zoom in               |
+| `Cmd+-`       | Zoom out              |
+| `Cmd+0`       | Reset to default zoom |
+
+Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+W`, `Cmd+Q`, etc.) are also wired up.
+
+## Preferences
+
+| Key               | Type                                                  | Default    |
+| ----------------- | ----------------------------------------------------- | ---------- |
+| `theme`           | `"light" \| "dark" \| "system"`                       | `"system"` |
+| `gmailTheme`      | `"light" \| "dark"`                                   | `"light"`  |
+| `defaultZoom`     | `70 \| 80 \| 90 \| 100 \| 110 \| 120 \| 130` (number) | `100`      |
+| `showDockBadge`   | bool                                                  | `true`     |
+| `launchAtStartup` | bool                                                  | `false`    |
+| `crashReporting`  | bool                                                  | `false`    |
+
+`Cmd+=` / `Cmd+-` step zoom in 10% increments and clamp to 50–150%. `Cmd+0` resets to `defaultZoom`.
+
+`gmailTheme` themes the Gmail web client itself via a bundled [Dark Reader](https://darkreader.org/) build injected as a user script — `theme` only controls Owlbox's own window chrome. Changing `gmailTheme` requires a restart to take effect.
+
+**Reset app** (Advanced tab) clears all WebView data — cookies, session, localStorage, and cache — and resets all preferences to defaults. The next launch will prompt for Gmail sign-in.
+
+Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.
 
 ## Non-goals
 
-Owlbox is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client. The only visual modification is the optional Gmail dark theme, which is applied via a bundled Dark Reader injection.
+Owlbox is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client. The only visual modification is the optional Gmail dark theme applied via Dark Reader.
 
-## Requirements
+---
 
-- macOS 15 (Sequoia) or newer
-- [mise](https://mise.jdx.dev/) for toolchain management
+## Development
 
-## Setup
+### Setup
+
+Requires [mise](https://mise.jdx.dev/) for toolchain management.
 
 ```bash
 brew install mise
@@ -64,16 +103,28 @@ mise install
 pnpm install
 ```
 
-## Develop
+### Run
 
 ```bash
 pnpm tauri dev
 ```
 
+Some features require a real macOS app bundle to work — notifications, for example, won't be granted permission by macOS when running as a raw binary. For those cases, build a debug bundle:
+
+```bash
+pnpm tauri build --debug
+```
+
+Dismiss the DMG window that opens, then launch the app directly:
+
+```bash
+open src-tauri/target/debug/bundle/macos/Owlbox.app
+```
+
 <details>
 <summary>
 
-## Verify
+### Verify
 
 </summary>
 
@@ -116,7 +167,7 @@ A full bundle build (`pnpm tauri build`) takes 5–15 minutes and isn't strictly
 <details>
 <summary>
 
-## Release
+### Release
 
 </summary>
 
@@ -150,37 +201,3 @@ Outputs:
 To wipe all build artifacts and caches, run `./clean.sh`.
 
 </details>
-
-## Shortcuts
-
-| Shortcut      | Action                |
-| ------------- | --------------------- |
-| `Cmd+,`       | Preferences           |
-| `Cmd+Shift+N` | Compose new message   |
-| `Cmd+R`       | Reload                |
-| `Cmd+F`       | Find / focus search   |
-| `Cmd+Shift+V` | Paste and match style |
-| `Cmd+=`       | Zoom in               |
-| `Cmd+-`       | Zoom out              |
-| `Cmd+0`       | Reset to default zoom |
-
-Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+W`, `Cmd+Q`, etc.) are also wired up.
-
-## Preferences
-
-| Key               | Type                                                  | Default    |
-| ----------------- | ----------------------------------------------------- | ---------- |
-| `theme`           | `"light" \| "dark" \| "system"`                       | `"system"` |
-| `gmailTheme`      | `"light" \| "dark"`                                   | `"light"`  |
-| `defaultZoom`     | `70 \| 80 \| 90 \| 100 \| 110 \| 120 \| 130` (number) | `100`      |
-| `showDockBadge`   | bool                                                  | `true`     |
-| `launchAtStartup` | bool                                                  | `false`    |
-| `crashReporting`  | bool                                                  | `false`    |
-
-`Cmd+=` / `Cmd+-` step zoom in 10% increments and clamp to 50–150%. `Cmd+0` resets to `defaultZoom`.
-
-`gmailTheme` themes the Gmail web client itself via a bundled [Dark Reader](https://darkreader.org/) build injected as a user script — `theme` only controls Owlbox's own window chrome. Changing `gmailTheme` requires a restart to take effect.
-
-**Reset app** (Advanced tab) clears all WebView data — cookies, session, localStorage, and cache — and resets all preferences to defaults. The next launch will prompt for Gmail sign-in.
-
-Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.
