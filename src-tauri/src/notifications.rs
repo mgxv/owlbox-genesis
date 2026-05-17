@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use tauri::{AppHandle, Listener, Runtime};
-use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_notification::{NotificationExt, PermissionState};
 
 use crate::diag;
 
@@ -14,6 +14,14 @@ pub fn request_permission<R: Runtime>(app: &AppHandle<R>) {
     if let Err(e) = app.notification().request_permission() {
         diag::warn(&format!("[notifications] permission request: {e}"));
     }
+}
+
+#[tauri::command]
+pub fn notification_permission_granted(app: tauri::AppHandle) -> bool {
+    matches!(
+        app.notification().request_permission(),
+        Ok(PermissionState::Granted)
+    )
 }
 
 pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
