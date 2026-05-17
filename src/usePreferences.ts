@@ -9,6 +9,7 @@ import {
     KEY_SHOW_DOCK_BADGE,
     KEY_LAUNCH_AT_STARTUP,
     KEY_CRASH_REPORTING,
+    KEY_NOTIFICATIONS_ENABLED,
     EVENT_THEME_CHANGED,
     EVENT_GMAIL_THEME_CHANGED,
     EVENT_DEFAULT_ZOOM_CHANGED,
@@ -26,6 +27,7 @@ export type Prefs = {
     showDockBadge: boolean;
     launchAtStartup: boolean;
     crashReporting: boolean;
+    notificationsEnabled: boolean;
 };
 
 type UsePreferences = Prefs & {
@@ -36,6 +38,7 @@ type UsePreferences = Prefs & {
     setShowDockBadge: (v: boolean) => void;
     setLaunchAtStartup: (v: boolean) => void;
     setCrashReporting: (v: boolean) => void;
+    setNotificationsEnabled: (v: boolean) => void;
 };
 
 export function usePreferences(): UsePreferences {
@@ -45,6 +48,7 @@ export function usePreferences(): UsePreferences {
     const [showDockBadge, setShowDockBadge] = useState(true);
     const [launchAtStartup, setLaunchAtStartup] = useState(false);
     const [crashReporting, setCrashReporting] = useState(false);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [store, setStore] = useState<Store | null>(null);
     const [loaded, setLoaded] = useState(false);
     const lastPersisted = useRef<Prefs | null>(null);
@@ -72,6 +76,9 @@ export function usePreferences(): UsePreferences {
                 setCrashReporting(
                     (await s.get<boolean>(KEY_CRASH_REPORTING)) ?? false,
                 );
+                setNotificationsEnabled(
+                    (await s.get<boolean>(KEY_NOTIFICATIONS_ENABLED)) ?? false,
+                );
             } catch (e) {
                 console.error("Failed to load preferences, using defaults:", e);
             } finally {
@@ -89,6 +96,7 @@ export function usePreferences(): UsePreferences {
             showDockBadge,
             launchAtStartup,
             crashReporting,
+            notificationsEnabled,
         };
         const prev = lastPersisted.current;
         if (!prev) {
@@ -136,6 +144,11 @@ export function usePreferences(): UsePreferences {
                 key: KEY_CRASH_REPORTING,
                 value: current.crashReporting,
             });
+        if (prev.notificationsEnabled !== current.notificationsEnabled)
+            changes.push({
+                key: KEY_NOTIFICATIONS_ENABLED,
+                value: current.notificationsEnabled,
+            });
         if (changes.length === 0) return;
 
         lastPersisted.current = current;
@@ -151,6 +164,7 @@ export function usePreferences(): UsePreferences {
         showDockBadge,
         launchAtStartup,
         crashReporting,
+        notificationsEnabled,
         loaded,
         store,
     ]);
@@ -169,5 +183,7 @@ export function usePreferences(): UsePreferences {
         setLaunchAtStartup,
         crashReporting,
         setCrashReporting,
+        notificationsEnabled,
+        setNotificationsEnabled,
     };
 }

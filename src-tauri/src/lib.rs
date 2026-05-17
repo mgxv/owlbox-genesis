@@ -63,6 +63,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             build_info::crash_reporting_available,
+            notifications::notification_permission_granted,
             reset::reset_app,
             updater::update_pending_version,
         ])
