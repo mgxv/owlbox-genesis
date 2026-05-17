@@ -7,10 +7,12 @@ use crate::diag;
 
 static PENDING_VERSION: OnceLock<String> = OnceLock::new();
 
+const STARTUP_DELAY: std::time::Duration = std::time::Duration::from_secs(20);
+
 pub fn check_in_background<R: Runtime>(app: &AppHandle<R>) {
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+        tokio::time::sleep(STARTUP_DELAY).await;
         let updater = match handle.updater() {
             Ok(u) => u,
             Err(e) => {
