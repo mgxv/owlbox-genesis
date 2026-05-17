@@ -19,12 +19,12 @@ fi
 echo "Bumping to $VERSION..."
 
 # tauri.conf.json
-jq --arg v "$VERSION" '.version = $v' "$ROOT/src-tauri/tauri.conf.json" \
+jq --indent 4 --arg v "$VERSION" '.version = $v' "$ROOT/src-tauri/tauri.conf.json" \
     > "$ROOT/src-tauri/tauri.conf.json.tmp" \
     && mv "$ROOT/src-tauri/tauri.conf.json.tmp" "$ROOT/src-tauri/tauri.conf.json"
 
 # package.json
-jq --arg v "$VERSION" '.version = $v' "$ROOT/package.json" \
+jq --indent 4 --arg v "$VERSION" '.version = $v' "$ROOT/package.json" \
     > "$ROOT/package.json.tmp" \
     && mv "$ROOT/package.json.tmp" "$ROOT/package.json"
 
@@ -36,6 +36,12 @@ echo "Updated:"
 echo "  src-tauri/tauri.conf.json -> $VERSION"
 echo "  package.json              -> $VERSION"
 echo "  src-tauri/Cargo.toml      -> $VERSION"
+echo ""
+echo "Formatting and linting..."
+(cd "$ROOT" && pnpm format)
+(cd "$ROOT" && pnpm lint)
+(cd "$ROOT/src-tauri" && cargo fmt --all)
+echo "All checks passed."
 echo ""
 echo "Next steps:"
 echo "  git add src-tauri/tauri.conf.json package.json src-tauri/Cargo.toml"
