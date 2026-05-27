@@ -3233,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "owlbox-genesis"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "dirs 6.0.0",

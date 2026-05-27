@@ -1,6 +1,6 @@
 [package]
 name = "owlbox-genesis"
-version = "0.4.1"
+version = "0.4.2"
 description = "A minimal native macOS app for Gmail's web client."
 authors = ["mgxv"]
 edition = "2021"
